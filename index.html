@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI GAME</title>
+    <title>BONSAI PIXEL EVOLUTION</title>
     <style>
         body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; }
         .box { padding: 20px; }
         .stats { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
-        .card { background: #333; padding: 15px; border-radius: 12px; flex: 1; max-width: 120px; }
+        .card { background: #333; padding: 15px; border-radius: 12px; flex: 1; max-width: 120px; border: 1px solid #444; }
         .val { font-size: 24px; color: #4caf50; font-weight: bold; }
         #view { 
             width: 280px; height: 280px; background: #222; margin: 20px auto; 
@@ -17,27 +17,28 @@
         }
         #view img { width: 100%; height: 100%; object-fit: cover; }
         .btn { padding: 18px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; margin: 10px; width: 90%; max-width: 300px; }
-        .btn-w { background: #4caf50; color: #fff; }
-        .btn-g { background: #ff9800; color: #fff; }
-        .btn:disabled { opacity: 0.2; }
+        .btn-w { background: #4caf50; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+        .btn-g { background: #ff9800; color: #fff; box-shadow: 0 4px 0 #e68a00; }
+        .btn:disabled { opacity: 0.2; transform: translateY(4px); box-shadow: none; }
+        #timer { color:#ffeb3b; font-weight: bold; height:20px; margin:10px; }
     </style>
 </head>
 <body>
     <div class="box">
         <div class="stats">
             <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
-            <div class="card">AGE<br><span id="ui-age" class="val">0</span></div>
+            <div class="card">樹齢<br><span id="ui-age" class="val">0</span></div>
         </div>
         <div id="view">🌱</div>
-        <div id="timer" style="color:#ffeb3b; height:20px; margin:10px;"></div>
+        <div id="timer"></div>
         <button class="btn btn-w" onclick="doW()">💧 水やり (+10GP)</button>
         <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長 (50GP)</button>
-        <div id="death" style="color:red; font-size:12px; margin-top:10px;"></div>
+        <div id="status" style="font-size:12px; color:#888; margin-top:10px;"></div>
     </div>
 
     <script>
         let gp=0, age=0, img="", last=Date.now();
-        const LIMIT = 1209600000;
+        const LIMIT = 1209600000; // 14 days
 
         window.onload = function() { load(); update(); };
 
@@ -46,35 +47,19 @@
         async function doG() {
             if(gp<50) return;
             gp-=50; age+=5;
+            
             const v=document.getElementById('view'), b=document.getElementById('gb'), t=document.getElementById('timer');
             v.style.opacity="0.4"; b.disabled=true;
+            
             let s=10;
-            const i=setInterval(()=>{ t.innerText="Generating... "+s+"s"; s--; if(s<0)clearInterval(i); },1000);
-            const seed=Math.floor(Math.random()*9999);
-            const url="https://image.pollinations.ai/prompt/pixel_art_bonsai_tree_white_background?seed="+seed;
-            const temp=new Image(); temp.src=url;
-            temp.onload=()=>{
-                clearInterval(i); t.innerText="SUCCESS!"; img=url;
-                v.innerHTML='<img src="'+url+'">'; v.style.opacity="1";
-                save(); update(); setTimeout(()=>t.innerText="",2000);
-            };
-        }
+            const i=setInterval(()=>{ t.innerText="Growing... "+s+"s"; s--; if(s<0)clearInterval(i); },1000);
 
-        function save() { localStorage.setItem('bonsai_v11', JSON.stringify({gp,age,img,last})); }
-        function load() {
-            const s=localStorage.getItem('bonsai_v11');
-            if(s){ const d=JSON.parse(s); gp=d.gp||0; age=d.age||0; img=d.img||""; last=d.last||Date.now(); }
-        }
-        function update() {
-            document.getElementById('ui-gp').innerText=gp;
-            document.getElementById('ui-age').innerText=age;
-            document.getElementById('gb').disabled=(gp<50);
-            if(img && (Date.now()-last<=LIMIT)) document.getElementById('view').innerHTML='<img src="'+img+'">';
-            if(Date.now()-last>LIMIT){
-                document.getElementById('view').innerHTML='🍂';
-                document.getElementById('death').innerText="Dead (Dry Bonsai)";
-            }
-        }
-    </script>
-</body>
-</html>
+            // --- 成長段階プロンプト生成 ---
+            let stage = "seedling, tiny sprout";
+            if (age >= 20 && age < 60) stage = "young bonsai, thin trunk, few leaves";
+            else if (age >= 60 && age < 120) stage = "growing bonsai, developing branches";
+            else if (age >= 120 && age < 250) stage = "mature bonsai, thick trunk, dense foliage";
+            else if (age >= 250) stage = "ancient legendary bonsai, twisted trunk, majestic";
+
+            // 一貫性を持たせるキーワード（スタイルと鉢を固定）
+            const base = "16-bit_pixel_art, bonsai_tree, ch
