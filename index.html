@@ -3,26 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI MINIMAL</title>
+    <title>BONSAI EVOLUTION v20</title>
     <style>
         body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
         #init-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; }
         #game-screen { display: none; padding: 20px; }
-        
-        /* メイン画面はGPのみでスッキリ */
         .stats { display: flex; justify-content: center; margin: 10px 0; }
         .card { background: #333; padding: 15px; border-radius: 12px; width: 120px; border: 1px solid #444; }
         .val { font-size: 24px; color: #4caf50; font-weight: bold; }
-        
         #view { width: 280px; height: 280px; background: #000; margin: 20px auto; border-radius: 25px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; cursor: pointer; }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
-
-        /* モーダル */
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
         .modal-content { background: #222; padding: 25px; border-radius: 20px; width: 80%; max-width: 300px; text-align: left; border: 1px solid #444; }
         .m-item { margin: 12px 0; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 8px; display: flex; justify-content: space-between; }
         .m-val { color: #4caf50; font-weight: bold; }
-
         .btn { padding: 16px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; margin: 8px; width: 90%; max-width: 320px; cursor: pointer; }
         .btn-w { background: #4caf50; color: #fff; }
         .btn-g { background: #ff9800; color: #fff; }
@@ -47,13 +41,10 @@
         <div class="stats">
             <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
         </div>
-
         <div id="view" onclick="showModal()">🌱</div>
         <div id="timer" style="color:#ffeb3b; font-weight:bold; height:20px; margin:5px;"></div>
-
         <button class="btn btn-w" onclick="doW()">💧 水やり (+10GP)</button>
         <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長 (50GP)</button>
-        
         <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
             <option value="chokkan">直幹 (Straight)</option>
             <option value="shakan">斜幹 (Slanted)</option>
@@ -78,7 +69,7 @@
         const LIMIT = 1209600000;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v19');
+            const s = localStorage.getItem('bonsai_v20');
             if(s) {
                 const d = JSON.parse(s);
                 gp=Number(d.gp); age=Number(d.age); img=d.img; last=Number(d.last);
@@ -92,7 +83,7 @@
 
         function initBonsai() {
             species = document.getElementById('species-select').value;
-            seed = Math.floor(Math.random() * 1000000); // 最初にシードを完全固定
+            seed = Math.floor(Math.random() * 1000000);
             document.getElementById('init-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'block';
             save(); update();
@@ -102,19 +93,15 @@
             document.getElementById('m-species').innerText = "【 " + species + " 】";
             document.getElementById('m-age').innerText = age.toFixed(1) + "年相当";
             document.getElementById('m-water').innerText = waterCount + "回";
-            
             const diff = Date.now() - last;
             document.getElementById('m-health').innerText = (diff > LIMIT*0.8) ? "乾燥気味" : "絶好調";
-
             const styleLabels = {chokkan:'直幹', shakan:'斜幹', moyogi:'模様木'};
             document.getElementById('m-shape').innerText = styleLabels[targetStyle] + (age < 3 ? "の苗木" : "の若木");
-            document.getElementById('m-flavor').innerText = "固定された種（シード）から、あなたの手で少しずつ形作られています。";
-
+            document.getElementById('m-flavor').innerText = "少しずつ、時間をかけて。あなたの選んだ型へと近づいています。";
             document.getElementById('modal').style.display = 'flex';
         }
 
         function hideModal() { document.getElementById('modal').style.display = 'none'; }
-
         function doW() { gp+=10; waterCount++; last=Date.now(); save(); update(); }
 
         async function doG() {
@@ -122,13 +109,12 @@
             gp -= 50; age += 0.1;
             const v = document.getElementById('view'), t = document.getElementById('timer'), b = document.getElementById('gb');
             v.style.opacity = "0.3"; b.disabled = true;
-            
             let s = 10;
-            const itv = setInterval(() => { t.innerText = "Growing... "+s+"s"; s--; if(s<0)clearInterval(i); }, 1000);
+            const itv = setInterval(() => { t.innerText = "Growing... "+s+"s"; s--; if(s<0)clearInterval(itv); }, 1000);
 
-            // シードを固定(seed=)し、ageに応じてわずかにプロンプトを変化させる
-            let size = (age < 2) ? "very_small_minimal_seedling" : "small_bonsai";
-            const prompt = encodeURIComponent(`pixel_art,${species},${targetStyle}_style,${size},single_tree,white_background`);
+            // プロンプトに age.toFixed(1) を含めることで、同じシードでも僅かな差異を生む
+            let detail = (age < 2) ? "tiny_seedling" : "young_tree";
+            const prompt = encodeURIComponent(`16bit_pixel_art,${species},${targetStyle}_style,${detail},evolution_stage_${age.toFixed(1)},single_bonsai,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
@@ -141,7 +127,7 @@
         }
 
         function save() {
-            localStorage.setItem('bonsai_v19', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, start: startDate, species, seed }));
+            localStorage.setItem('bonsai_v20', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, start: startDate, species, seed }));
         }
 
         function update() {
