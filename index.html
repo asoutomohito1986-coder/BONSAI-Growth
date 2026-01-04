@@ -10,7 +10,7 @@
         #screen-game { display: none; padding: 20px; min-height: 100vh; }
         
         .bonsai-view { 
-            width: 300px; height: 300px; background: #222; margin: 20px auto; 
+            width: 280px; height: 280px; background: #222; margin: 20px auto; 
             border-radius: 15px; display: flex; align-items: center; justify-content: center;
             overflow: hidden; border: 4px solid #333; position: relative;
             image-rendering: pixelated;
@@ -18,16 +18,17 @@
         .bonsai-view img { width: 100%; height: 100%; object-fit: cover; }
         
         .stat-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .card { background: #333; padding: 10px 20px; border-radius: 10px; border: 1px solid #444; }
-        .val { font-size: 24px; color: #4caf50; font-weight: bold; }
+        .card { background: #333; padding: 10px 15px; border-radius: 10px; border: 1px solid #444; flex: 1; max-width: 120px; }
+        .val { font-size: 22px; color: #4caf50; font-weight: bold; }
 
-        .btn { padding: 18px 30px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin: 10px; width: 85%; }
-        .btn-white { background: #ffffff; color: #0052FF; width: 220px; }
+        .btn { padding: 16px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin: 10px; width: 90%; max-width: 300px; }
+        .btn-white { background: #ffffff; color: #0052FF; }
         .btn-green { background: #4caf50; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
         .btn-grow { background: #ff9800; color: #fff; box-shadow: 0 4px 0 #e68a00; }
-        .btn:disabled { opacity: 0.3; transform: translateY(4px); box-shadow: none; }
+        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn:disabled { opacity: 0.3; }
 
-        #timer { color: #ffeb3b; font-size: 18px; font-weight: bold; height: 1.5em; margin-top: 10px; }
+        #timer { color: #ffeb3b; font-size: 16px; font-weight: bold; height: 1.5em; margin-top: 10px; }
         #death-note { color: #ff5252; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
@@ -36,13 +37,14 @@
     <div id="screen-init">
         <div style="font-size: 80px;">🌲</div>
         <h1>BONSAI GROWTH</h1>
-        <button onclick="doConnect()" class="btn btn-white">START SYSTEM</button>
+        <p>Connecting...</p>
+        <button id="manual-btn" onclick="doConnect()" class="btn btn-white">START GAME</button>
     </div>
 
     <div id="screen-game">
         <div class="stat-row">
-            <div class="stat-card card">GP<br><span id="ui-gp" class="val">0</span></div>
-            <div class="stat-card card">AGE<br><span id="ui-age" class="val">0</span></div>
+            <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
+            <div class="card">AGE<br><span id="ui-age" class="val">0</span></div>
         </div>
 
         <div class="bonsai-view" id="ui-view">🌱</div>
@@ -56,19 +58,30 @@
     </div>
 
     <script>
-        let wallet = ""; let gp = 0; let age = 0; let img = "";
+        let wallet = "default_user"; // 接続失敗時の予備
+        let gp = 0; let age = 0; let img = "";
         let waterDate = Date.now();
-        const LIMIT = 14 * 24 * 60 * 60 * 1000;
+        const LIMIT = 1209600000; // 14 days
+
+        // 起動時に自動接続を試みる
+        window.onload = function() {
+            setTimeout(doConnect, 500);
+        };
 
         async function doConnect() {
             if (window.ethereum) {
-                const acct = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                wallet = acct[0];
-                load();
-                document.getElementById('screen-init').style.display = 'none';
-                document.getElementById('screen-game').style.display = 'block';
-                update();
-            } else { alert("Please use Coinbase Wallet app."); }
+                try {
+                    const acct = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    wallet = acct[0];
+                } catch (e) {
+                    console.log("Wallet connection skipped, using local storage");
+                }
+            }
+            // 接続できてもできなくてもゲーム画面へ進む（開発を止めないため）
+            load();
+            document.getElementById('screen-init').style.display = 'none';
+            document.getElementById('screen-game').style.display = 'block';
+            update();
         }
 
         function doWater() {
@@ -89,35 +102,35 @@
             
             let sec = 10;
             const itv = setInterval(() => {
-                timer.innerText = "Generating HD Pixel Art... " + sec + "s";
+                timer.innerText = "Generating... " + sec + "s";
                 sec--;
                 if (sec < 0) clearInterval(itv);
             }, 1000);
 
-            const seed = Math.floor(Math.random() * 10000);
-            const p = encodeURIComponent("single_bonsai_tree, high_definition_pixel_art, 16-bit, white_background, centered");
+            const seed = Math.floor(Math.random() * 99999);
+            const p = "single_bonsai_tree,pixel_art,16bit,white_background,hd";
             const url = "https://image.pollinations.ai/prompt/" + p + "?nologo=true&seed=" + seed + "&width=512&height=512";
 
             const tImg = new Image();
             tImg.src = url;
             tImg.onload = function() {
                 clearInterval(itv);
-                timer.innerText = "Evolution Success!";
+                timer.innerText = "Success!";
                 img = url;
                 view.innerHTML = '<img src="' + url + '">';
                 view.style.opacity = "1";
                 save(); update();
-                setTimeout(() => { timer.innerText = ""; }, 3000);
+                setTimeout(() => { timer.innerText = ""; }, 2000);
             };
         }
 
         function save() {
             const d = { gp: gp, age: age, img: img, water: waterDate };
-            localStorage.setItem('bonsai_v8_' + wallet, JSON.stringify(d));
+            localStorage.setItem('bonsai_v9_' + wallet, JSON.stringify(d));
         }
 
         function load() {
-            const s = localStorage.getItem('bonsai_v8_' + wallet);
+            const s = localStorage.getItem('bonsai_v9_' + wallet);
             if (s) {
                 const d = JSON.parse(s);
                 gp = d.gp || 0; age = d.age || 0; img = d.img || ""; waterDate = d.water || Date.now();
@@ -129,14 +142,14 @@
             document.getElementById('ui-age').innerText = age;
             document.getElementById('btn-grow').disabled = (gp < 50);
             if (img) document.getElementById('ui-view').innerHTML = '<img src="' + img + '">';
-
+            
             const diff = Date.now() - waterDate;
             if (diff > LIMIT) {
                 document.getElementById('ui-view').innerHTML = '<div style="font-size:80px;">🍂</div>';
-                document.getElementById('death-note').innerText = "枯れています (ドライ盆栽化)";
+                document.getElementById('death-note').innerText = "Dead (Dry Bonsai)";
             } else {
-                const dLeft = Math.ceil((LIMIT - diff) / (1000 * 60 * 60 * 24));
-                document.getElementById('death-note').innerText = "あと " + dLeft + " 日で枯れます";
+                const dLeft = Math.ceil((LIMIT - diff) / 86400000);
+                document.getElementById('death-note').innerText = "Watering needed within " + dLeft + " days";
             }
         }
     </script>
