@@ -2,152 +2,139 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BONSAI GROWTH AI</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <script src="https://unpkg.com/@coinbase/wallet-sdk@3.7.1/dist/index.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BONSAI GROWTH</title>
     <style>
-        body { text-align: center; background: #222; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
-        #title-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0052FF; }
-        #game-screen { display: none; background: #f0f0f0; color: #333; min-height: 100vh; padding: 20px; }
+        /* グレーアウトを防ぐため背景を明示 */
+        body { text-align: center; background: #ffffff; color: #333; font-family: sans-serif; margin: 0; padding: 0; }
+        #screen-init { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0052FF; color: white; }
+        #screen-game { display: none; padding: 20px; }
         
-        .card-row { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 10px; border-radius: 10px; flex: 1; max-width: 150px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .num { font-size: 20px; font-weight: bold; color: #2e7d32; }
-
-        #bonsai-view { 
-            width: 250px; height: 250px; background: #ddd; margin: 20px auto; 
-            border-radius: 15px; display: flex; align-items: center; justify-content: center;
-            overflow: hidden; border: 4px solid #fff; position: relative;
+        .bonsai-box { 
+            width: 280px; height: 280px; background: #eeeeee; margin: 20px auto; 
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-        #bonsai-view img { width: 100%; height: 100%; object-fit: cover; }
+        .bonsai-box img { width: 100%; height: 100%; object-fit: cover; }
         
-        .btn { padding: 15px 25px; border-radius: 30px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; margin: 5px; }
-        .btn-blue { background: #fff; color: #0052FF; }
-        .btn-green { background: #4caf50; color: #fff; }
-        .btn-orange { background: #ff9800; color: #fff; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #loading-text { position: absolute; color: #666; font-size: 12px; display: none; }
+        .btn { padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; cursor: pointer; font-size: 18px; margin: 10px; }
+        .btn-blue { background: #ffffff; color: #0052FF; }
+        .btn-green { background: #4caf50; color: #ffffff; width: 80%; }
+        .btn-orange { background: #ff9800; color: #ffffff; width: 80%; }
+        .btn:disabled { opacity: 0.3; }
+        
+        .stat-row { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: #f8f8f8; padding: 10px 20px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="title-screen">
-        <div style="font-size: 60px;">🌲</div>
-        <h1>BONSAI GROWTH</h1>
-        <button id="connect-btn" class="btn btn-blue">Wallet Connect</button>
+    <div id="screen-init">
+        <div style="font-size: 80px;">🌲</div>
+        <h1 style="margin: 20px 0;">BONSAI GROWTH</h1>
+        <button onclick="doConnect()" class="btn btn-blue">ログインする</button>
     </div>
 
-    <div id="game-screen">
-        <div class="card-row">
-            <div class="stat-card"><div>GP</div><div id="gp-val" class="num">0</div></div>
-            <div class="stat-card"><div>樹齢</div><div id="age-val" class="num">0</div></div>
+    <div id="screen-game">
+        <div class="stat-row">
+            <div class="stat-card">GP: <b id="ui-gp">0</b></div>
+            <div class="stat-card">樹齢: <b id="ui-age">0</b>年</div>
         </div>
 
-        <div id="bonsai-view">
-            <span id="loading-text">AI生成中...</span>
-            <div id="bonsai-img-container" style="font-size: 80px;">🌱</div>
-        </div>
+        <div class="bonsai-box" id="ui-view">🌱</div>
 
-        <button class="btn btn-green" onclick="water()">💧 水やり (+10GP)</button>
-        <button id="grow-btn" class="btn btn-orange" onclick="grow()" disabled>✨ 成長 (50GP)</button>
+        <button class="btn btn-green" onclick="doWater()">💧 水やり (+10GP)</button>
+        <button id="btn-grow" class="btn btn-orange" onclick="doGrow()" disabled>✨ 成長 (50GP)</button>
         
-        <p id="info-msg" style="margin-top: 15px; font-size: 14px; color: #666;"></p>
-        <div id="death-msg" style="color: red; font-size: 12px;"></div>
-        <button onclick="resetAll()" style="margin-top: 30px; opacity: 0.2; background: none; border: none;">[Reset]</button>
+        <p id="ui-msg" style="color: #666; font-size: 14px; margin-top: 20px;"></p>
+        <button onclick="localStorage.clear();location.reload();" style="margin-top: 50px; opacity: 0.2; border: none; background: none;">[Reset]</button>
     </div>
 
     <script>
-        // グローバル変数
-        var userAddr = "";
-        var myGP = 0;
-        var myAge = 0;
-        var lastWaterTime = Date.now();
-        var myImg = "";
+        // データ管理
+        let addr = "";
+        let gp = 0;
+        let age = 0;
+        let img = "";
 
-        // ウォレット接続
-        async function connectWallet() {
-            if (!window.ethereum) {
-                alert("Coinbase Walletアプリで開いてください");
-                return;
-            }
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                userAddr = accounts[0];
-                loadData();
-                document.getElementById('title-screen').style.display = 'none';
-                document.getElementById('game-screen').style.display = 'block';
-                updateUI();
-            } catch (e) {
-                alert("接続エラー: " + e.message);
+        // 接続処理 (アプリ内ブラウザ標準のethereumを使用)
+        async function doConnect() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    addr = accounts[0];
+                    load();
+                    document.getElementById('screen-init').style.display = 'none';
+                    document.getElementById('screen-game').style.display = 'block';
+                    update();
+                } catch (e) {
+                    alert("接続に失敗しました");
+                }
+            } else {
+                alert("Coinbase Walletアプリ内のブラウザで開いてください");
             }
         }
 
         // 水やり
-        function water() {
-            myGP += 10;
-            lastWaterTime = Date.now();
-            document.getElementById('info-msg').innerText = "水をあげました！(+10GP)";
-            saveData();
-            updateUI();
+        function doWater() {
+            gp += 10;
+            document.getElementById('ui-msg').innerText = "水やり完了！";
+            save();
+            update();
         }
 
-        // 成長（AI画像生成）
-        async function grow() {
-            if (myGP < 50) return;
-            myGP -= 50;
-            myAge += 5;
-
-            const loader = document.getElementById('loading-text');
-            const container = document.getElementById('bonsai-img-container');
-            const btn = document.getElementById('grow-btn');
-
-            loader.style.display = "block";
-            container.style.opacity = "0.3";
+        // AI成長
+        async function doGrow() {
+            if (gp < 50) return;
+            gp -= 50;
+            age += 5;
+            
+            const view = document.getElementById('ui-view');
+            const btn = document.getElementById('btn-grow');
+            
+            view.style.opacity = "0.5";
             btn.disabled = true;
+            document.getElementById('ui-msg').innerText = "AIが新しい姿を生成中...";
 
-            // AI画像URL生成 (Pollinationsを使用)
+            // シンプルなAI画像リクエスト
             const seed = Math.floor(Math.random() * 10000);
-            const prompt = encodeURIComponent("bonsai tree, hyper-detailed, zen style, white background");
-            const newUrl = "https://image.pollinations.ai/prompt/" + prompt + "?seed=" + seed + "&width=300&height=300&nologo=true";
+            const newUrl = "https://image.pollinations.ai/prompt/bonsai_tree_zen_style_white_background?nologo=true&seed=" + seed;
 
-            // 画像の読み込み確認
-            const testImg = new Image();
-            testImg.src = newUrl;
-            testImg.onload = function() {
-                myImg = newUrl;
-                container.innerHTML = '<img src="' + newUrl + '">';
-                container.style.opacity = "1";
-                loader.style.display = "none";
-                document.getElementById('info-msg').innerText = "AIが新しい姿を描きました！";
-                saveData();
-                updateUI();
-            };
-            testImg.onerror = function() {
-                loader.innerText = "エラー発生。もう一度試して。";
-                btn.disabled = false;
+            const test = new Image();
+            test.src = newUrl;
+            test.onload = function() {
+                img = newUrl;
+                view.innerHTML = '<img src="' + newUrl + '">';
+                view.style.opacity = "1";
+                document.getElementById('ui-msg').innerText = "成長しました！";
+                save();
+                update();
             };
         }
 
-        // セーブ・ロード
-        function saveData() {
-            const obj = { gp: myGP, age: myAge, water: lastWaterTime, img: myImg };
-            localStorage.setItem('bonsai_save_' + userAddr, JSON.stringify(obj));
+        function save() {
+            const data = { gp: gp, age: age, img: img };
+            localStorage.setItem('bonsai_data_' + addr, JSON.stringify(data));
         }
 
-        function loadData() {
-            const saved = localStorage.getItem('bonsai_save_' + userAddr);
+        function load() {
+            const saved = localStorage.getItem('bonsai_data_' + addr);
             if (saved) {
-                const data = JSON.parse(saved);
-                myGP = data.gp || 0;
-                myAge = data.age || 0;
-                lastWaterTime = data.water || Date.now();
-                myImg = data.img || "";
+                const d = JSON.parse(saved);
+                gp = d.gp || 0;
+                age = d.age || 0;
+                img = d.img || "";
             }
         }
 
-        // UI更新
-        function updateUI() {
-            document.getElementById('gp-val').innerText = myGP;
-            document.
+        function update() {
+            document.getElementById('ui-gp').innerText = gp;
+            document.getElementById('ui-age').innerText = age;
+            document.getElementById('btn-grow').disabled = (gp < 50);
+            if (img) {
+                document.getElementById('ui-view').innerHTML = '<img src="' + img + '">';
+            }
+        }
+    </script>
+</body>
+</html>
