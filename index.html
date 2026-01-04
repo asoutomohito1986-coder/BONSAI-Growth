@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BONSAI GROWTH - Coinbase Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/@coinbase/wallet-sdk@3.7.1/dist/index.js"></script>
+    <style>
+        body { text-align: center; background-color: #f4f4f2; font-family: sans-serif; margin: 0; }
+        #title-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0052FF; color: white; }
+        #game-screen { display: none; padding-top: 30px; }
+        .btn-coinbase { padding: 15px 30px; border-radius: 12px; background: white; color: #0052FF; border: none; cursor: pointer; font-weight: bold; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+        .water-btn { font-size: 20px; padding: 15px 50px; background-color: #5d6d3e; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="title-screen">
+        <div style="font-size: 80px;">🌲</div>
+        <h1 style="letter-spacing: 5px;">BONSAI GROWTH</h1>
+        <p>Base Chain Native Experience</p>
+        <button id="connect-btn" class="btn-coinbase">
+            <img src="https://www.coinbase.com/favicon.ico" width="24"> Coinbase Wallet で始める
+        </button>
+    </div>
+
+    <div id="game-screen">
+        <h1>BONSAI GROWTH <small>v3.0</small></h1>
+        <p id="wallet-address" style="font-size: 12px; background: #eee; display: inline-block; padding: 5px 10px; border-radius: 5px;"></p>
+        <div id="bonsai-image" style="font-size: 120px; margin: 20px;">🌲</div>
+        <h2>樹齢: <span id="age-display">0</span> 日</h2>
+        <button id="water-btn" class="water-btn" onclick="waterBonsai()">💧 水やり</button>
+        <div style="margin-top: 20px;">
+            <button onclick="downloadCSV()">記録保存</button>
+            <button onclick="resetGame()" style="color:red;">リセット</button>
+        </div>
+    </div>
+
+    <script>
+        const APP_NAME = "BONSAI GROWTH";
+        const APP_LOGO_URL = "https://example.com/logo.png";
+        const BASE_RPC_URL = "https://mainnet.base.org";
+        const CHAIN_ID = 8453;
+
+        // Coinbase Wallet SDK の初期化
+        const coinbaseWalletCollector = new CoinbaseWalletSDK({
+            appName: APP_NAME,
+            appLogoUrl: APP_LOGO_URL,
+            darkMode: false
+        });
+
+        const ethereum = coinbaseWalletCollector.makeWeb3Provider(BASE_RPC_URL, CHAIN_ID);
+        const provider = new ethers.providers.Web3Provider(ethereum);
+
+        // --- 接続ロジック ---
+        async function connect() {
+            try {
+                // アカウント接続要求
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const address = accounts[0];
+                
+                // Baseチェーンへの切り替え
+                await switchToBase();
+                
+                showGame(address);
+            } catch (err) {
+                console.error("接続エラー:", err);
+            }
+        }
+
+        async function switchToBase() {
+            try {
+                await ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x2105' }], // 8453
+                });
+            } catch (err) {
+                if (err.code === 4902) {
+                    await ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x2105',
+                            chainName: 'Base Mainnet',
+                            rpcUrls: [BASE_RPC_URL],
+                            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                            blockExplorerUrls: ["https://basescan.org"]
+                        }]
+                    });
+                }
+            }
+        }
+
+        // --- ゲームロジック (これまでのものを統合) ---
+        let age = Number(localStorage.getItem('bonsaiAge')) || 0;
+        let lastWaterTime = Number(localStorage.getItem('lastWater')) || Date.now();
+        let isDead = localStorage.getItem('isDead') === 'true';
+
+        function showGame(address) {
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            document.getElementById('wallet-address').innerText = "Wallet: " + address;
+            document.getElementById('age-display').innerText = age;
+            if (isDead) setDeadState();
+        }
+
+        function waterBonsai() {
+            age++;
+            lastWaterTime = Date.now();
+            document.getElementById('age-display').innerText = age;
+            localStorage.setItem('bonsaiAge', age);
+            localStorage.setItem('lastWater', lastWaterTime);
+        }
+
+        function setDeadState() {
+            document.getElementById('bonsai-image').innerText = "🍂";
+            document.getElementById('water-btn').disabled = true;
+        }
+
+        function resetGame() {
+            if(confirm("リセットしますか？")) { localStorage.clear(); location.reload(); }
+        }
+
+        document.getElementById('connect-btn').onclick = connect;
+
+        // 自動ログインチェック
+        window.addEventListener('load', async () => {
+            const accounts = await ethereum.request({ method: 'eth_accounts' });
+            if (accounts && accounts.length > 0) {
+                showGame(accounts[0]);
+            }
+        });
+    </script>
+</body>
+</html>
