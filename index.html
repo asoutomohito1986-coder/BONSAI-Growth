@@ -3,28 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BONSAI GROWTH - GP System</title>
+    <title>BONSAI GROWTH - System v3.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/@coinbase/wallet-sdk@3.7.1/dist/index.js"></script>
     <style>
-        body { text-align: center; background: #f0f4f0; font-family: sans-serif; margin: 0; }
+        body { text-align: center; background: #f4f4f2; font-family: sans-serif; margin: 0; }
         #title-screen { background: #0052FF; color: white; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #game-screen { display: none; padding: 20px; }
+
+        .status-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 280px; }
+        .gp-display { font-size: 32px; color: #2e7d32; font-weight: bold; }
         
-        /* ステータス表示 */
-        .status-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 250px; margin-bottom: 20px; }
-        .gp-display { font-size: 32px; color: #2e7d32; font-weight: bold; margin: 10px 0; }
-        .rank-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-        
-        /* 盆栽の見た目 */
-        .bonsai-container { font-size: 120px; margin: 40px 0; transition: transform 0.2s; }
-        .bonsai-container:active { transform: scale(1.1); }
-        
+        /* 盆栽とエフェクト */
+        .bonsai-box { font-size: 120px; margin: 40px 0; position: relative; display: inline-block; }
+        @keyframes shine {
+            0% { text-shadow: 0 0 0px #fff; }
+            50% { text-shadow: 0 0 30px #ffeb3b, 0 0 50px #ffeb3b; }
+            100% { text-shadow: 0 0 0px #fff; }
+        }
+        .shine-effect { animation: shine 0.8s ease-in-out; }
+
         /* ボタン */
-        .btn-water { background: #4caf50; color: white; padding: 18px 50px; font-size: 22px; border-radius: 50px; border: none; cursor: pointer; box-shadow: 0 4px 0 #388e3c; }
-        .btn-water:active { transform: translateY(3px); box-shadow: none; }
-        
-        #wallet-addr { font-size: 10px; color: #999; margin-top: 40px; }
+        .btn { padding: 15px 30px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; margin: 5px; font-size: 18px; }
+        .btn-water { background: #4caf50; color: white; }
+        .btn-grow { background: #ff9800; color: white; }
+        .btn-grow:disabled { background: #ccc; cursor: not-allowed; }
+
+        #death-timer { color: #d32f2f; font-size: 12px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -32,114 +37,144 @@
     <div id="title-screen">
         <div style="font-size: 80px;">🌲</div>
         <h1>BONSAI GROWTH</h1>
-        <p>Your Web3 Bonsai Journey</p>
-        <button id="connect-btn" style="padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer;">ウォレットでログイン</button>
+        <button id="connect-btn" class="btn" style="background: white; color: #0052FF;">ウォレット接続</button>
     </div>
 
     <div id="game-screen">
         <div class="status-card">
-            <div id="rank-display" class="rank-badge">RANK: 苗木</div>
+            <div id="state-badge" style="font-size: 14px; font-weight: bold; color: #666;">状態: 良好</div>
             <div class="gp-display"><span id="gp-value">0</span> GP</div>
-            <div style="font-size: 12px; color: #666;">樹齢: <span id="age-display">0</span> 日</div>
+            <div style="font-size: 14px;">樹齢（評価値）: <span id="age-display">0</span> 年</div>
+            <div id="death-timer"></div>
         </div>
 
-        <div id="bonsai-display" class="bonsai-container">🌱</div>
+        <div class="bonsai-box" id="bonsai-display">🌲</div>
         
-        <button class="btn-water" onclick="actionWater()">💧 水やり (+10GP)</button>
-        
-        <p id="msg-box" style="margin-top: 20px; color: #555; font-weight: bold; height: 1.2em;"></p>
+        <div>
+            <button class="btn btn-water" id="water-btn" onclick="actionWater()">💧 水やり (+10GP)</button>
+            <button class="btn btn-grow" id="grow-btn" onclick="actionGrow()" disabled>✨ 成長 (要50GP)</button>
+        </div>
 
-        <div id="wallet-addr"></div>
-        <button onclick="resetGame()" style="margin-top: 30px; opacity: 0.3; border: none; background: none; cursor: pointer;">[データリセット]</button>
+        <p id="msg-box" style="margin-top: 20px; font-weight: bold; color: #333;"></p>
+        <p id="wallet-addr" style="font-size: 10px; opacity: 0.5; margin-top: 40px;"></p>
+        <button onclick="resetGame()" style="opacity: 0.2; border: none; background: none;">[リセット]</button>
     </div>
 
     <script>
         let userAddress = "";
         let gp = 0;
-        let age = 0;
+        let lastWatered = Date.now();
+        let isDead = false;
+        let estimatedAge = 0; // 評価用の樹齢
 
-        // --- 1. 接続機能 ---
+        const DEAD_THRESHOLD = 14 * 24 * 60 * 60 * 1000; // 14日間（ミリ秒）
+
         async function connect() {
-            if (!window.ethereum) { alert("Coinbase Walletアプリで開いてください"); return; }
+            if (!window.ethereum) return;
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
-                
-                loadData(); // セーブデータを読み込む
-                
+                loadData();
+                checkDeath();
                 document.getElementById('title-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'block';
                 updateUI();
             } catch (e) { console.error(e); }
         }
 
-        // --- 2. 水やりアクション (1回10GP) ---
+        function checkDeath() {
+            const now = Date.now();
+            if (now - lastWatered > DEAD_THRESHOLD) {
+                isDead = true;
+            }
+        }
+
         function actionWater() {
+            if (isDead) {
+                alert("この盆栽は枯れています。ドライ盆栽として保存してください。");
+                return;
+            }
             gp += 10;
-            age += 1;
+            lastWatered = Date.now();
             
-            document.getElementById('msg-box').innerText = "水やり完了！すくすく育っています。";
+            // 光るエフェクト
+            const el = document.getElementById('bonsai-display');
+            el.classList.remove('shine-effect');
+            void el.offsetWidth; // リフロー
+            el.classList.add('shine-effect');
+
+            document.getElementById('msg-box').innerText = "水やりをしてGPを獲得しました！";
+            saveData();
+            updateUI();
+        }
+
+        function actionGrow() {
+            if (gp < 50) return;
+            gp -= 50;
+            estimatedAge += 5; // 成長ボタンで評価上の樹齢が増える
+            
+            document.getElementById('msg-box').innerText = "AIによる新形態を生成中...（将来機能）";
+            
+            // ここで将来的にAI APIを叩く
+            alert("AI連携の準備が整い次第、新しい画像が生成されます！");
             
             saveData();
             updateUI();
-            
-            // 演出：少し大きく揺れる
-            const el = document.getElementById('bonsai-display');
-            el.style.transform = "scale(1.2)";
-            setTimeout(() => el.style.transform = "scale(1.0)", 200);
-            
-            // 3秒後にメッセージを消す
-            setTimeout(() => { document.getElementById('msg-box').innerText = ""; }, 3000);
         }
 
-        // --- 3. セーブ・ロード ---
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('bonsai_v3_main_' + userAddress)) || { gp: 0, age: 0 };
+            const data = JSON.parse(localStorage.getItem('bonsai_v3_ai_' + userAddress)) || 
+                         { gp: 0, lastWatered: Date.now(), isDead: false, estimatedAge: 0 };
             gp = data.gp;
-            age = data.age;
+            lastWatered = data.lastWatered;
+            isDead = data.isDead;
+            estimatedAge = data.estimatedAge;
         }
 
         function saveData() {
-            const data = { gp: gp, age: age };
-            localStorage.setItem('bonsai_v3_main_' + userAddress, JSON.stringify(data));
+            localStorage.setItem('bonsai_v3_ai_' + userAddress, JSON.stringify({
+                gp: gp, lastWatered: lastWatered, isDead: isDead, estimatedAge: estimatedAge
+            }));
         }
 
-        // --- 4. 画面更新と進化ロジック ---
         function updateUI() {
             document.getElementById('gp-value').innerText = gp;
-            document.getElementById('age-display').innerText = age;
-            document.getElementById('wallet-addr').innerText = "Wallet: " + userAddress;
+            document.getElementById('age-display').innerText = estimatedAge;
+            document.getElementById('wallet-addr').innerText = userAddress;
+            
+            // 成長ボタンの活性化
+            document.getElementById('grow-btn').disabled = (gp < 50);
 
+            // 状態表示
             const display = document.getElementById('bonsai-display');
-            const rank = document.getElementById('rank-display');
+            const stateBadge = document.getElementById('state-badge');
+            const timer = document.getElementById('death-timer');
 
-            // GPに応じた進化（ここでの数値はテスト用に低めに設定しています）
-            if (gp >= 100) {
-                display.innerText = "🌳"; 
-                rank.innerText = "RANK: 老樹";
-                rank.style.background = "#fff3e0";
-                rank.style.color = "#ef6c00";
-            } else if (gp >= 50) {
-                display.innerText = "🌲"; 
-                rank.innerText = "RANK: 若木";
-                rank.style.background = "#e8f5e9";
-                rank.style.color = "#2e7d32";
+            if (isDead) {
+                display.innerText = "🍂";
+                stateBadge.innerText = "状態: ドライ盆栽（昇格可能）";
+                stateBadge.style.color = "brown";
+                document.getElementById('water-btn').disabled = true;
             } else {
-                display.innerText = "🌱"; 
-                rank.innerText = "RANK: 苗木";
+                display.innerText = "🌲";
+                stateBadge.innerText = "状態: 良好";
+                stateBadge.style.color = "green";
+                
+                // 次に枯れるまでの目安を表示
+                const timeLeft = DEAD_THRESHOLD - (Date.now() - lastWatered);
+                const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+                timer.innerText = `あと ${daysLeft} 日水やりしないと枯れます`;
             }
         }
 
         function resetGame() {
-            if(confirm("このウォレットの盆栽データをリセットしますか？")) {
-                localStorage.removeItem('bonsai_v3_main_' + userAddress);
+            if(confirm("データを削除しますか？")) {
+                localStorage.removeItem('bonsai_v3_ai_' + userAddress);
                 location.reload();
             }
         }
 
-        window.onload = () => {
-            document.getElementById('connect-btn').onclick = connect;
-        };
+        window.onload = () => { document.getElementById('connect-btn').onclick = connect; };
     </script>
 </body>
 </html>
