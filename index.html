@@ -3,27 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI GRADUAL EVOLUTION</title>
+    <title>BONSAI SELECT EVOLUTION</title>
     <style>
-        body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; }
-        #game-screen { padding: 15px; }
-        .stats { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
-        .card { background: #333; padding: 10px; border-radius: 12px; flex: 1; border: 1px solid #444; }
+        body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
+        #game-screen { padding: 10px; }
+        .stats { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
+        .card { background: #333; padding: 10px; border-radius: 12px; flex: 1; border: 1px solid #444; min-width: 80px; }
         .val { font-size: 18px; color: #4caf50; font-weight: bold; }
         
         #view { width: 280px; height: 280px; background: #000; margin: 15px auto; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; image-rendering: pixelated; }
         #view img { width: 100%; height: 100%; object-fit: cover; }
 
-        .btn { padding: 15px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; margin: 5px; width: 90%; max-width: 320px; cursor: pointer; }
+        .btn { padding: 16px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; margin: 8px; width: 90%; max-width: 320px; cursor: pointer; }
         .btn-w { background: #4caf50; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
         .btn-g { background: #ff9800; color: #fff; box-shadow: 0 4px 0 #e68a00; }
-        
-        .style-selector { display: flex; justify-content: center; gap: 5px; margin: 10px 0; flex-wrap: wrap; }
-        .btn-s { padding: 8px 12px; font-size: 12px; border-radius: 5px; background: #444; color: #ccc; border: 1px solid #666; width: auto; }
-        .btn-s.active { background: #0052FF; color: #fff; border-color: #fff; }
-        
-        .btn:disabled { opacity: 0.2; transform: translateY(4px); box-shadow: none; }
+        .btn:disabled { opacity: 0.2 !important; transform: translateY(4px); box-shadow: none !important; }
+
+        /* ドロップダウンのスタイル */
+        .style-dropdown { 
+            background: #444; color: #fff; padding: 12px; border-radius: 10px; 
+            border: 1px solid #666; font-size: 16px; width: 80%; max-width: 250px; 
+            margin: 10px auto; display: block; appearance: none; text-align: center;
+        }
+
         #timer { color:#ffeb3b; font-weight: bold; height:20px; margin:5px; }
+        #status { font-size:11px; color:#666; margin-top:20px; }
     </style>
 </head>
 <body>
@@ -32,7 +36,6 @@
         <div class="stats">
             <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
             <div class="card">樹齢<br><span id="ui-age" class="val">0</span></div>
-            <div class="card">目標の型<br><span id="ui-target" class="val">-</span></div>
         </div>
 
         <div id="view">🌱</div>
@@ -42,72 +45,87 @@
         <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長 (50GP)</button>
         
         <div style="margin-top: 20px; font-size: 13px; color: #aaa;">▼ 次の成長で目指す型を選択</div>
-        <div class="style-selector">
-            <button id="s-chokkan" class="btn-s" onclick="setTarget('chokkan')">直幹</button>
-            <button id="s-shakan" class="btn-s" onclick="setTarget('shakan')">斜幹</button>
-            <button id="s-moyogi" class="btn-s" onclick="setTarget('moyogi')">模様木</button>
-        </div>
+        <select id="style-select" class="style-dropdown" onchange="setTarget(this.value)">
+            <option value="chokkan">直幹 (Straight)</option>
+            <option value="shakan">斜幹 (Slanted)</option>
+            <option value="moyogi">模様木 (Curved)</option>
+        </select>
 
-        <div id="status" style="font-size:11px; color:#666; margin-top:15px;"></div>
-        <button onclick="if(confirm('リセットしますか？')){localStorage.clear();location.reload();}" style="margin-top:30px; opacity:0.1; background:none; color:#fff; border:none;">[Data Reset]</button>
+        <div id="status"></div>
+        <button onclick="if(confirm('リセットしますか？')){localStorage.clear();location.reload();}" style="margin-top:40px; opacity:0.3; background:none; color:#fff; border:none; text-decoration: underline;">[Data Reset]</button>
     </div>
 
     <script>
-        let gp=0, age=0, img="", last=Date.now(), targetStyle="chokkan";
+        let gp = 0, age = 0, img = "", last = Date.now(), targetStyle = "chokkan";
         const LIMIT = 1209600000;
 
+        // 起動時の処理
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v14');
-            if(s) {
-                const d = JSON.parse(s);
-                gp=d.gp||0; age=d.age||0; img=d.img||""; last=d.last||Date.now(); targetStyle=d.target||"chokkan";
-            }
+            try {
+                const s = localStorage.getItem('bonsai_v16');
+                if(s) {
+                    const d = JSON.parse(s);
+                    gp = Number(d.gp) || 0;
+                    age = Number(d.age) || 0;
+                    img = d.img || "";
+                    last = Number(d.last) || Date.now();
+                    targetStyle = d.target || "chokkan";
+                    document.getElementById('style-select').value = targetStyle;
+                }
+            } catch(e) { console.error("Load Error"); }
             update();
         };
 
         function setTarget(s) {
             targetStyle = s;
             save();
+        }
+
+        function doW() {
+            gp += 10;
+            last = Date.now();
+            save();
             update();
         }
 
-        function doW() { gp+=10; last=Date.now(); save(); update(); }
-
         async function doG() {
-            if(gp<50) return;
-            gp-=50; age+=5;
+            if(gp < 50) return;
+            gp -= 50;
+            age += 5;
             
-            const v=document.getElementById('view'), b=document.getElementById('gb'), t=document.getElementById('timer');
-            v.style.opacity="0.4"; b.disabled=true;
+            const v = document.getElementById('view'), b = document.getElementById('gb'), t = document.getElementById('timer');
+            v.style.opacity = "0.3"; b.disabled = true;
             
-            let s=10;
-            const i=setInterval(()=>{ t.innerText="Growing... "+s+"s"; s--; if(s<0)clearInterval(i); },1000);
+            let sec = 10;
+            const itv = setInterval(() => {
+                t.innerText = "Growing... " + sec + "s";
+                sec--;
+                if(sec < 0) clearInterval(itv);
+            }, 1000);
 
-            // --- 徐々に変化させるプロンプト戦略 ---
-            // targetStyleだけでなく、現在のageも混ぜることで「移行期」を表現
-            let styleName = (targetStyle==='chokkan'?'formal upright':targetStyle==='shakan'?'slanted':'informal upright curved');
+            const styleMap = {chokkan: 'formal_upright', shakan: 'slanted', moyogi: 'informal_upright_curved'};
+            let stage = (age < 50) ? "young_seedling" : (age < 150) ? "growing_tree" : "ancient_tree";
             
-            // 樹齢に応じたベース指示
-            let stage = (age < 50) ? "young sprout" : (age < 150) ? "growing tree" : "ancient majestic tree";
-            
-            // 「transitioning to（〜へ移行中）」という言葉をプロンプトに混ぜることで、急激な変化を抑制
-            const prompt = encodeURIComponent(`16-bit_pixel_art, bonsai_tree, transitioning_to_${styleName}_style, ${stage}, in_pot, white_background, sharp_pixels`);
-            
+            // 徐々に変化させるためのプロンプト
+            const prompt = encodeURIComponent(`16-bit_pixel_art,bonsai_tree,transitioning_to_${styleMap[targetStyle]}_style,${stage},in_pot,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${Math.floor(Math.random()*9999)}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
             temp.src = url;
             temp.onload = () => {
-                clearInterval(i); t.innerText="EVOLVED!";
+                clearInterval(itv);
+                t.innerText = "EVOLVED!";
                 img = url;
-                v.innerHTML=`<img src="${url}">`; v.style.opacity="1";
-                save(); update();
-                setTimeout(()=>t.innerText="",2000);
+                v.innerHTML = `<img src="${url}">`;
+                v.style.opacity = "1";
+                save();
+                update();
+                setTimeout(() => t.innerText = "", 2000);
             };
         }
 
         function save() { 
-            localStorage.setItem('bonsai_v14', JSON.stringify({gp,age,img,last,target:targetStyle})); 
+            localStorage.setItem('bonsai_v16', JSON.stringify({ gp, age, img, last, target: targetStyle })); 
         }
         
         function update() {
@@ -115,6 +133,21 @@
             document.getElementById('ui-age').innerText = age;
             document.getElementById('gb').disabled = (gp < 50);
             
-            // 目標スタイルの表示更新
-            const labels = {chokkan:'直幹', shakan:'斜幹', moyogi:'模様木'};
-            document.getElementById('ui-target').innerText = labels[targetStyle];
+            const now = Date.now();
+            if(img && (now - last <= LIMIT)) {
+                document.getElementById('view').innerHTML = `<img src="${img}">`;
+            } else if (now - last > LIMIT) {
+                document.getElementById('view').innerHTML = '<div style="font-size:80px;">🍂</div>';
+            }
+            
+            const st = document.getElementById('status');
+            if(now - last > LIMIT) {
+                st.innerHTML = "<span style='color:red'>枯れています</span>";
+            } else {
+                const dLeft = Math.ceil((LIMIT - (now - last)) / 86400000);
+                st.innerText = "生存可能: 残り " + dLeft + " 日";
+            }
+        }
+    </script>
+</body>
+</html>
