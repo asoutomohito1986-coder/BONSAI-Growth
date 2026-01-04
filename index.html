@@ -3,65 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BONSAI GROWTH - Coinbase Edition</title>
+    <title>BONSAI GROWTH - Coinbase</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/@coinbase/wallet-sdk@3.7.1/dist/index.js"></script>
     <style>
-        body { text-align: center; background-color: #f4f4f2; font-family: sans-serif; margin: 0; }
-        #title-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0052FF; color: white; padding: 20px; box-sizing: border-box; }
-        #game-screen { display: none; padding-top: 30px; }
-        .btn-coinbase { padding: 18px 30px; border-radius: 15px; background: white; color: #0052FF; border: none; cursor: pointer; font-weight: bold; font-size: 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-        .btn-coinbase:active { transform: scale(0.98); }
-        .water-btn { font-size: 24px; padding: 15px 60px; background-color: #5d6d3e; color: white; border: none; border-radius: 12px; cursor: pointer; margin-top: 20px; }
-        #wallet-address { font-size: 12px; background: #ddd; padding: 8px; border-radius: 8px; word-break: break-all; max-width: 80%; margin: 10px auto; }
+        body { text-align: center; background: #0052FF; color: white; font-family: sans-serif; margin: 0; padding: 0; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        #game-screen { display: none; background: #f4f4f2; color: black; width: 100%; height: 100vh; padding-top: 30px; }
+        .btn-connect { padding: 20px 40px; border-radius: 16px; background: white; color: #0052FF; border: 4px solid #ff0000; cursor: pointer; font-weight: bold; font-size: 22px; }
+        .btn-connect:active { background: #ddd; }
+        #debug-log { position: fixed; bottom: 10px; width: 100%; font-size: 10px; color: #fff; }
     </style>
 </head>
 <body>
 
     <div id="title-screen">
-        <div style="font-size: 80px; margin-bottom: 20px;">🌲</div>
-        <h1 style="letter-spacing: 3px; margin: 0;">BONSAI GROWTH</h1>
-        <p style="opacity: 0.9; margin-bottom: 40px;">Base Chain Native Experience</p>
-        
-        <button id="connect-btn" class="btn-coinbase">
-            <img src="https://www.coinbase.com/favicon.ico" width="28">
-            ウォレットでログイン
-        </button>
-        
-        <p id="debug-info" style="font-size: 10px; margin-top: 20px; opacity: 0.7;"></p>
+        <div style="font-size: 80px;">🌲</div>
+        <h1>BONSAI GROWTH</h1>
+        <button id="connect-btn" class="btn-connect">ここをタップして接続</button>
+        <div id="debug-log">Status: Initializing...</div>
     </div>
 
     <div id="game-screen">
-        <h1>BONSAI GROWTH <small>v3.0</small></h1>
-        <p id="wallet-address"></p>
-        <div id="bonsai-image" style="font-size: 120px; margin: 30px;">🌲</div>
+        <h1>BONSAI GROWTH v3.0</h1>
+        <div id="bonsai-image" style="font-size: 100px;">🌲</div>
         <h2>樹齢: <span id="age-display">0</span> 日</h2>
-        <p id="status-message" style="color: blue;">元気に育っています！</p>
-        
-        <button id="water-btn" class="water-btn" onclick="waterBonsai()">💧 水やり</button>
-        
-        <div style="margin-top: 50px; border-top: 1px solid #ccc; padding-top: 20px;">
-            <button onclick="downloadCSV()">📋 記録保存</button>
-            <button onclick="resetGame()" style="color:red; margin-left: 10px;">⚠️ リセット</button>
-        </div>
+        <button onclick="waterBonsai()" style="padding: 15px 40px; font-size: 20px;">💧 水やり</button>
+        <p id="wallet-addr" style="font-size: 10px; margin-top: 20px;"></p>
     </div>
 
     <script>
-        // --- 設定 ---
-        const APP_NAME = "BONSAI GROWTH";
-        const APP_LOGO_URL = "https://asoutomohito1986-coder.github.io/BONSAI-Growth/favicon.ico";
-        const BASE_RPC_URL = "https://mainnet.base.org";
-        const CHAIN_ID = 8453;
+        const log = (msg) => { document.getElementById('debug-log').innerText = "Status: " + msg; };
 
-        let ethereum;
-        let provider;
+        let walletSDK, ethereum;
 
-        // Coinbase Wallet SDK の初期化関数
-        function initCoinbase() {
+        function init() {
             try {
-                const coinbaseWalletSDK = new CoinbaseWalletSDK({
-                    appName: APP_NAME,
-                    appLogoUrl: APP_LOGO_URL,
-                    darkMode: false
-                });
-                ethereum
+                // アプリ内ブラウザですでにwindow.ethereumがある場合も考慮
+                if (window.ethereum && window.ethereum.isCoinbaseWallet) {
+                    ethereum = window.ethereum;
+                    log("Native CB Wallet Found");
+                } else {
+                    walletSDK = new CoinbaseWalletSDK({ appName: "BONSAI", darkMode: false });
+                    ethereum = walletSDK.makeWeb3Provider("https://mainnet.base.org", 8453);
+                    log("SDK Loaded");
+                }
+            } catch (e) { log("Error: " + e.message); }
+        }
+
+        async function connect() {
+            log("Button Tapped!");
+            if (!ethereum) init();
+            try {
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                if (accounts.length > 0) {
+                    document.getElementById('title-screen').style.display = 'none';
+                    document.getElementById('game-screen').style.display = 'block';
+                    document.getElementById('wallet-addr').innerText = accounts[0];
+                    log("Connected!");
+                }
+            } catch (e) {
+                log("Connect Error: " + e.message);
+                alert("接続に失敗しました: " + e.message);
+            }
+        }
+
+        function waterBonsai() {
+            let age = Number(localStorage.getItem('bonsaiAge')) || 0;
+            age++;
+            localStorage.setItem('bonsaiAge', age);
+            document.getElementById('age-display').innerText = age;
+        }
+
+        window.onload = () => {
+            init();
+            document.getElementById('connect-btn').onclick = connect;
+        };
+    </script>
+</body>
+</html>
