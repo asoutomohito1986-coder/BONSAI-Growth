@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI EVOLUTION v20</title>
+    <title>BONSAI REALTIME</title>
     <style>
         body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
         #init-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1a1a1a; }
-        #game-screen { display: none; padding: 20px; }
-        .stats { display: flex; justify-content: center; margin: 10px 0; }
-        .card { background: #333; padding: 15px; border-radius: 12px; width: 120px; border: 1px solid #444; }
+        #game-screen { display: none; padding: 15px; }
+        .stats { display: flex; flex-direction: column; align-items: center; margin: 10px 0; }
+        .card { background: #333; padding: 10px 20px; border-radius: 12px; border: 1px solid #444; margin-bottom: 5px; }
         .val { font-size: 24px; color: #4caf50; font-weight: bold; }
-        #view { width: 280px; height: 280px; background: #000; margin: 20px auto; border-radius: 25px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; cursor: pointer; }
+        #life-timer { color: #ff5252; font-size: 14px; font-weight: bold; margin-bottom: 10px; }
+        
+        #view { width: 280px; height: 280px; background: #000; margin: 10px auto; border-radius: 25px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; cursor: pointer; }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
-        .modal-content { background: #222; padding: 25px; border-radius: 20px; width: 80%; max-width: 300px; text-align: left; border: 1px solid #444; }
-        .m-item { margin: 12px 0; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 8px; display: flex; justify-content: space-between; }
-        .m-val { color: #4caf50; font-weight: bold; }
+
         .btn { padding: 16px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; margin: 8px; width: 90%; max-width: 320px; cursor: pointer; }
         .btn-w { background: #4caf50; color: #fff; }
         .btn-g { background: #ff9800; color: #fff; }
         .dropdown { background: #333; color: #fff; padding: 12px; border-radius: 10px; width: 85%; border: 1px solid #555; font-size: 16px; margin: 10px 0; }
+        
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; z-index: 100; }
+        .modal-content { background: #222; padding: 25px; border-radius: 20px; width: 80%; max-width: 300px; text-align: left; }
     </style>
 </head>
 <body>
@@ -28,23 +30,26 @@
     <div id="init-screen">
         <h2>樹種を選択</h2>
         <select id="species-select" class="dropdown">
-            <option value="黒松">黒松</option>
-            <option value="真柏">真柏</option>
-            <option value="五葉松">五葉松</option>
-            <option value="楓">楓</option>
-            <option value="梅">梅</option>
+            <option value="Black Pine">黒松 (濃い緑・針葉)</option>
+            <option value="Red Maple">楓 (赤い紅葉・広葉)</option>
+            <option value="Plum with pink flowers">梅 (ピンクの花・古木)</option>
+            <option value="Shinpaku Juniper with white trunk">真柏 (白い幹・ねじれ)</option>
         </select>
         <button class="btn btn-w" onclick="initBonsai()">育成開始</button>
     </div>
 
     <div id="game-screen">
         <div class="stats">
-            <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
+            <div id="life-timer">水切れまで: --:--:--</div>
+            <div class="card">GP: <span id="ui-gp" class="val">0</span></div>
         </div>
+
         <div id="view" onclick="showModal()">🌱</div>
-        <div id="timer" style="color:#ffeb3b; font-weight:bold; height:20px; margin:5px;"></div>
+        <div id="grow-status" style="color:#ffeb3b; font-size:12px; height:15px;"></div>
+
         <button class="btn btn-w" onclick="doW()">💧 水やり (+10GP)</button>
         <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長 (50GP)</button>
+        
         <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
             <option value="chokkan">直幹 (Straight)</option>
             <option value="shakan">斜幹 (Slanted)</option>
@@ -54,31 +59,29 @@
 
     <div id="modal" onclick="hideModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 id="m-species" style="margin-top:0;">-</h3>
-            <div class="m-item">推定樹齢 <span class="m-val" id="m-age">0.0年</span></div>
-            <div class="m-item">総合樹形 <span class="m-val" id="m-shape">-</span></div>
-            <div class="m-item">健康状態 <span class="m-val" id="m-health">-</span></div>
-            <div class="m-item">累計水やり <span class="m-val" id="m-water">0回</span></div>
-            <p id="m-flavor" style="color:#888; font-size:12px; line-height:1.5; margin-top:15px;"></p>
+            <h3 id="m-species" style="color:#4caf50; margin:0;">-</h3>
+            <p id="m-age" style="font-size:14px; color:#aaa;">樹齢: 0.0年</p>
+            <hr style="border:0; border-top:1px solid #444;">
+            <p id="m-water" style="font-size:14px;">累計水やり: 0回</p>
+            <p id="m-flavor" style="font-size:12px; color:#888; font-style:italic;"></p>
             <button class="btn btn-w" style="width:100%; padding:10px;" onclick="hideModal()">閉じる</button>
         </div>
     </div>
 
     <script>
         let gp=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", waterCount=0, startDate=Date.now(), species="", seed=0;
-        const LIMIT = 1209600000;
+        const LIMIT = 1209600000; // 14 days
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v20');
+            const s = localStorage.getItem('bonsai_v21');
             if(s) {
                 const d = JSON.parse(s);
-                gp=Number(d.gp); age=Number(d.age); img=d.img; last=Number(d.last);
-                targetStyle=d.target; waterCount=d.wCount; startDate=d.start;
-                species=d.species; seed=d.seed;
+                gp=d.gp; age=d.age; img=d.img; last=d.last; targetStyle=d.target; waterCount=d.wCount; startDate=d.start; species=d.species; seed=d.seed;
                 document.getElementById('init-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'block';
                 update();
             }
+            setInterval(updateLifeTimer, 1000); // 1秒ごとにタイマー更新
         };
 
         function initBonsai() {
@@ -89,15 +92,26 @@
             save(); update();
         }
 
+        function updateLifeTimer() {
+            const now = Date.now();
+            const remain = LIMIT - (now - last);
+            const timerEl = document.getElementById('life-timer');
+            if(remain <= 0) {
+                timerEl.innerText = "水切れ：枯れています";
+                return;
+            }
+            const d = Math.floor(remain / 86400000);
+            const h = Math.floor((remain % 86400000) / 3600000);
+            const m = Math.floor((remain % 3600000) / 60000);
+            const s = Math.floor((remain % 60000) / 1000);
+            timerEl.innerText = `水切れまで: ${d}日 ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        }
+
         function showModal() {
-            document.getElementById('m-species').innerText = "【 " + species + " 】";
-            document.getElementById('m-age').innerText = age.toFixed(1) + "年相当";
-            document.getElementById('m-water').innerText = waterCount + "回";
-            const diff = Date.now() - last;
-            document.getElementById('m-health').innerText = (diff > LIMIT*0.8) ? "乾燥気味" : "絶好調";
-            const styleLabels = {chokkan:'直幹', shakan:'斜幹', moyogi:'模様木'};
-            document.getElementById('m-shape').innerText = styleLabels[targetStyle] + (age < 3 ? "の苗木" : "の若木");
-            document.getElementById('m-flavor').innerText = "少しずつ、時間をかけて。あなたの選んだ型へと近づいています。";
+            document.getElementById('m-species').innerText = species;
+            document.getElementById('m-age').innerText = `樹齢: ${age.toFixed(1)}年相当`;
+            document.getElementById('m-water').innerText = `累計水やり: ${waterCount}回`;
+            document.getElementById('m-flavor').innerText = `${species}特有の趣が出てきましたね。`;
             document.getElementById('modal').style.display = 'flex';
         }
 
@@ -107,27 +121,25 @@
         async function doG() {
             if(gp < 50) return;
             gp -= 50; age += 0.1;
-            const v = document.getElementById('view'), t = document.getElementById('timer'), b = document.getElementById('gb');
+            const v = document.getElementById('view'), t = document.getElementById('grow-status'), b = document.getElementById('gb');
             v.style.opacity = "0.3"; b.disabled = true;
-            let s = 10;
-            const itv = setInterval(() => { t.innerText = "Growing... "+s+"s"; s--; if(s<0)clearInterval(itv); }, 1000);
+            t.innerText = "成長中...";
 
-            // プロンプトに age.toFixed(1) を含めることで、同じシードでも僅かな差異を生む
-            let detail = (age < 2) ? "tiny_seedling" : "young_tree";
-            const prompt = encodeURIComponent(`16bit_pixel_art,${species},${targetStyle}_style,${detail},evolution_stage_${age.toFixed(1)},single_bonsai,white_background`);
+            // 樹種ごとのプロンプト強調
+            const prompt = encodeURIComponent(`pixel_art,${species}_bonsai,${targetStyle}_style,small_size,age_${age.toFixed(1)},white_background,detailed_foliage`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
             temp.src = url;
             temp.onload = () => {
-                clearInterval(itv); t.innerText = "EVOLVED";
+                t.innerText = "";
                 img = url; v.innerHTML = `<img src="${url}">`; v.style.opacity = "1";
-                save(); update(); setTimeout(() => t.innerText = "", 2000);
+                save(); update();
             };
         }
 
         function save() {
-            localStorage.setItem('bonsai_v20', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, start: startDate, species, seed }));
+            localStorage.setItem('bonsai_v21', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, start: startDate, species, seed }));
         }
 
         function update() {
