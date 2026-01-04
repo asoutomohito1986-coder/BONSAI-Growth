@@ -1,25 +1,126 @@
-async function doGrow() {
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BONSAI PIXEL GROWTH</title>
+    <style>
+        body { text-align: center; background: #1a1a1a; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
+        #screen-init { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #0052FF; }
+        #screen-game { display: none; padding: 20px; background: #222; min-height: 100vh; }
+        
+        .bonsai-box { 
+            width: 280px; height: 280px; background: #333; margin: 20px auto; 
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            overflow: hidden; border: 4px solid #444; position: relative;
+            image-rendering: pixelated;
+        }
+        .bonsai-box img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .btn { padding: 16px 32px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; font-size: 16px; margin: 10px; width: 80%; }
+        .btn-blue { background: #fff; color: #0052FF; }
+        .btn-green { background: #4caf50; color: #fff; border-bottom: 4px solid #2e7d32; }
+        .btn-orange { background: #ff9800; color: #fff; border-bottom: 4px solid #e68a00; }
+        .btn:disabled { opacity: 0.3; transform: translateY(2px); border-bottom: none; }
+        
+        .stat-card { background: #333; padding: 10px; border-radius: 8px; border: 1px solid #444; min-width: 80px; display: inline-block; margin: 5px; }
+        .val { font-size: 20px; color: #4caf50; font-weight: bold; }
+        #timer-display { color: #ffeb3b; font-weight: bold; font-size: 18px; margin-top: 10px; height: 1.5em; }
+    </style>
+</head>
+<body>
+
+    <div id="screen-init">
+        <div style="font-size: 60px;">👾</div>
+        <h1>BONSAI PIXEL</h1>
+        <button onclick="doConnect()" class="btn btn-blue">Start System</button>
+    </div>
+
+    <div id="screen-game">
+        <div class="stat-card">GP<br><span id="ui-gp" class="val">0</span></div>
+        <div class="stat-card">AGE<br><span id="ui-age" class="val">0</span></div>
+
+        <div class="bonsai-box" id="ui-view">🌱</div>
+        
+        <div id="timer-display"></div>
+
+        <button class="btn btn-green" onclick="doWater()">Watering (+10GP)</button>
+        <button id="btn-grow" class="btn btn-orange" onclick="doGrow()" disabled>Evolution (50GP)</button>
+        
+        <p id="ui-msg" style="color: #aaa; font-size: 14px; margin-top: 20px;"></p>
+        <button onclick="localStorage.clear();location.reload();" style="margin-top: 50px; opacity: 0.2; color:#fff; border: none; background: none;">[Format]</button>
+    </div>
+
+    <script>
+        let addr = ""; let gp = 0; let age = 0; let img = "";
+
+        async function doConnect() {
+            if (window.ethereum) {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                addr = accounts[0];
+                load();
+                document.getElementById('screen-init').style.display = 'none';
+                document.getElementById('screen-game').style.display = 'block';
+                update();
+            } else { alert("Please use Coinbase Wallet app."); }
+        }
+
+        function doWater() {
+            gp += 10;
+            document.getElementById('ui-msg').innerText = "GP Added!";
+            save(); update();
+        }
+
+        async function doGrow() {
             if (gp < 50) return;
             gp -= 50; age += 5;
+            
             const view = document.getElementById('ui-view');
             const btn = document.getElementById('btn-grow');
-            view.style.opacity = "0.5";
+            const timerDisplay = document.getElementById('timer-display');
+            
+            view.style.opacity = "0.4";
             btn.disabled = true;
-            document.getElementById('ui-msg').innerText = "Generating HD Pixel Bonsai...";
+            
+            // カウントダウン開始 (10秒)
+            let timeLeft = 10;
+            const timerInterval = setInterval(() => {
+                timerDisplay.innerText = "Generating... " + timeLeft + "s";
+                timeLeft--;
+                if (timeLeft < 0) clearInterval(timerInterval);
+            }, 1000);
 
             const seed = Math.floor(Math.random() * 10000);
-            
-            // 「盆栽」を強調し、余計なキャラクターが入らないようにしたプロンプト
-            const prompt = encodeURIComponent("single_bonsai_tree, centered, japanese_art_style, high_definition_pixel_art, 16-bit, white_background, sharp_details");
+            const prompt = encodeURIComponent("single_bonsai_tree, centered, japanese_art_style, high_definition_pixel_art, 16-bit, white_background");
             const newUrl = `https://image.pollinations.ai/prompt/${prompt}?nologo=true&seed=${seed}&width=512&height=512`;
 
             const test = new Image();
             test.src = newUrl;
             test.onload = function() {
+                clearInterval(timerInterval);
+                timerDisplay.innerText = "Evolution Success!";
                 img = newUrl;
                 view.innerHTML = `<img src="${newUrl}">`;
                 view.style.opacity = "1";
-                document.getElementById('ui-msg').innerText = "Evolution Complete.";
                 save(); update();
+                setTimeout(() => { timerDisplay.innerText = ""; }, 3000);
             };
         }
+
+        function save() { localStorage.setItem('bonsai_p_v6_' + addr, JSON.stringify({ gp, age, img })); }
+        function load() {
+            const saved = localStorage.getItem('bonsai_p_v6_' + addr);
+            if (saved) {
+                const d = JSON.parse(saved);
+                gp = d.gp || 0; age = d.age || 0; img = d.img || "";
+            }
+        }
+        function update() {
+            document.getElementById('ui-gp').innerText = gp;
+            document.getElementById('ui-age').innerText = age;
+            document.getElementById('btn-grow').disabled = (gp < 50);
+            if (img) document.getElementById('ui-view').innerHTML = `<img src="${img}">`;
+        }
+    </script>
+</body>
+</html>
