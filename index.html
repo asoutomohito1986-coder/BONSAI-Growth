@@ -3,121 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI HD PIXEL - WATER FIXED</title>
+    <title>BONSAI HD PIXEL - PURE VERSION</title>
     <style>
-        body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; padding: 0; }
-        #game-screen { padding: 20px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .gp-card { background: #1a1a1a; padding: 10px 30px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
-        .val { font-size: 28px; color: #4caf50; font-weight: bold; }
+        body { text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow: hidden; }
+        #game-screen { padding: 20px; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
+        /* シンプルなGP表示 */
+        .gp-display { margin-bottom: 20px; }
+        .val { font-size: 32px; color: #4caf50; font-weight: bold; text-shadow: 0 0 10px rgba(76,175,80,0.3); }
+        
+        /* 盆栽ビューア */
         #view { 
-            width: 300px; height: 300px; background: #000; border-radius: 30px; 
+            width: 300px; height: 300px; background: #000; border-radius: 40px; 
             display: flex; align-items: center; justify-content: center; 
-            overflow: hidden; border: 6px solid #222; cursor: pointer; position: relative; 
+            overflow: hidden; border: 4px solid #222; position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 
-        /* 水やりアニメーションコンテナ */
-        #water-fx-container {
+        /* ピクセル・ウォーター演出 */
+        #water-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: none; z-index: 10;
+            pointer-events: none; z-index: 10; display: none;
         }
-        #watering-can-img {
-            position: absolute;
-            width: 250px; /* ジョウロと木がセットの画像なので大きめに */
-            height: auto;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            image-rendering: pixelated;
+        .pixel-drop {
+            position: absolute; width: 4px; height: 6px; background: #00e5ff;
+            opacity: 0.8; animation: drop-fall 0.6s linear infinite;
+        }
+        @keyframes drop-fall {
+            0% { transform: translateY(-10px); opacity: 0; }
+            30% { opacity: 1; }
+            100% { transform: translateY(280px); opacity: 0; }
         }
 
-        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); color: #fff; font-weight: bold; align-items: center; justify-content: center; z-index: 5; }
+        #loading-overlay { 
+            display: none; position: absolute; top:0; left:0; width:100%; height:100%; 
+            background: rgba(0,0,0,0.8); color: #4caf50; font-weight: bold;
+            align-items: center; justify-content: center; z-index: 20; letter-spacing: 2px;
+        }
 
-        .btn { padding: 18px; border-radius: 50px; border: none; font-weight: bold; font-size: 18px; margin: 10px; width: 100%; max-width: 320px; cursor: pointer; transition: 0.2s; }
-        .btn-w { background: #4caf50; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
-        .btn-g { background: #ff9800; color: #fff; box-shadow: 0 4px 0 #e68a00; }
-        .btn:disabled { opacity: 0.3; transform: translateY(4px); box-shadow: none; }
-        
-        .dropdown { background: #222; color: #ccc; border: 1px solid #444; padding: 10px; border-radius: 10px; width: 220px; margin-top: 10px; }
-        #health-hint { font-size: 13px; color: #666; margin-top: 10px; font-style: italic; }
+        /* 和モダンな操作系 */
+        .controls { width: 100%; max-width: 320px; margin-top: 20px; }
+        .btn { padding: 20px; border-radius: 15px; border: none; font-weight: bold; font-size: 18px; margin: 8px 0; width: 100%; cursor: pointer; transition: 0.3s; }
+        .btn-w { background: #1b5e20; color: #fff; border: 1px solid #2e7d32; }
+        .btn-g { background: #e65100; color: #fff; border: 1px solid #ef6c00; }
+        .btn:active { transform: scale(0.98); opacity: 0.8; }
+        .btn:disabled { opacity: 0.2; pointer-events: none; }
+
+        #health-msg { font-size: 13px; color: #555; height: 20px; margin-top: 10px; font-style: italic; }
+        .dropdown { background: #1a1a1a; color: #aaa; border: 1px solid #333; padding: 12px; border-radius: 10px; width: 100%; margin-top: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
 
     <div id="game-screen">
-        <div class="gp-card">GP <span id="ui-gp" class="val">0</span></div>
+        <div class="gp-display">GP <span id="ui-gp" class="val">0</span></div>
 
         <div id="view" onclick="showModal()">
-            <div id="water-fx-container">
-                <img id="watering-can-img" src="https://image.pollinations.ai/prompt/high%20definition%20pixel%20art%2C%20isometric%20view%2C%20a%20silver%20watering%20can%20pouring%20water%20onto%20a%20bonsai%20tree%2C%20white%20background%2C%20sparkling%20water%20drops?nologo=true&width=512&height=512" alt="Watering">
-            </div>
-            
+            <div id="water-layer"></div>
             <div id="loading-overlay">GROWING...</div>
             <div id="bonsai-img-container">🌱</div>
         </div>
-        <div id="health-hint"></div>
+        <div id="health-msg"></div>
 
-        <button id="wb" class="btn btn-w" onclick="doW()">💧 水やり</button>
-        <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長を促す</button>
-        
-        <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
-            <option value="chokkan">直幹 (Straight)</option>
-            <option value="shakan">斜幹 (Slanted)</option>
-            <option value="moyogi">模様木 (Curved)</option>
-        </select>
+        <div class="controls">
+            <button id="wb" class="btn btn-w" onclick="doW()">💧 水やり</button>
+            <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長を促す</button>
+            
+            <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
+                <option value="chokkan">直幹 (Straight)</option>
+                <option value="shakan">斜幹 (Slanted)</option>
+                <option value="moyogi">模様木 (Curved)</option>
+            </select>
+        </div>
     </div>
 
-    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-        <div style="background:#222; padding:30px; border-radius:20px; width:85%; max-width:320px; text-align:left; border:1px solid #444;" onclick="event.stopPropagation()">
-            <h3 id="m-species" style="color:#4caf50; margin-top:0; border-bottom:1px solid #333; padding-bottom:10px;"></h3>
-            <p id="m-age"></p>
-            <p id="m-shape"></p>
-            <p id="m-health" style="color:#ff9800;"></p>
-            <p id="m-water"></p>
-            <button class="btn btn-w" style="width:100%; padding:10px;" onclick="document.getElementById('modal').style.display='none'">閉じる</button>
+    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
+        <div style="background:#111; padding:40px; border-radius:5px; width:80%; max-width:300px; text-align:left; border-left:4px solid #4caf50;" onclick="event.stopPropagation()">
+            <h3 id="m-species" style="color:#fff; margin-top:0; letter-spacing:4px;"></h3>
+            <p id="m-age" style="color:#888;"></p>
+            <p id="m-shape" style="color:#888;"></p>
+            <p id="m-water" style="color:#888;"></p>
+            <div id="m-status" style="margin-top:20px; color:#4caf50; font-size:14px; border-top:1px solid #222; padding-top:15px;"></div>
+            <button class="btn btn-w" style="margin-top:30px; padding:10px; font-size:14px;" onclick="document.getElementById('modal').style.display='none'">閉じる</button>
         </div>
     </div>
 
     <script>
-        let gp=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", waterCount=0, startDate=Date.now(), species="Black Pine", seed=0;
+        let gp=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", waterCount=0, species="Black Pine", seed=0;
         const LIMIT = 1209600000;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v26');
+            const s = localStorage.getItem('bonsai_v27');
             if(s) {
                 const d = JSON.parse(s);
-                gp=d.gp; age=d.age; img=d.img; last=d.last; targetStyle=d.target; waterCount=d.wCount; startDate=d.start; species=d.species; seed=d.seed;
+                gp=d.gp; age=d.age; img=d.img; last=d.last; targetStyle=d.target; waterCount=d.wCount; species=d.species; seed=d.seed;
                 document.getElementById('style-select').value = targetStyle;
                 update();
             } else {
                 seed = Math.floor(Math.random()*1000000);
+                update();
             }
         };
 
         function showModal() {
             const diff = Date.now() - last;
-            document.getElementById('m-species').innerText = "樹種： " + species;
-            document.getElementById('m-age').innerText = "樹齢： " + age.toFixed(1) + "年相当";
-            document.getElementById('m-health').innerText = (diff < LIMIT * 0.5) ? "診断： 樹勢は旺盛です。" : "診断： 水が必要です。";
+            document.getElementById('m-species').innerText = species.toUpperCase();
+            document.getElementById('m-age').innerText = "樹齢: " + age.toFixed(1) + "年相当";
             const labels = {chokkan:'直幹', shakan:'斜幹', moyogi:'模様木'};
-            document.getElementById('m-shape').innerText = "樹形： " + labels[targetStyle];
-            document.getElementById('m-water').innerText = "水やり： " + waterCount + "回";
+            document.getElementById('m-shape').innerText = "樹形: " + labels[targetStyle];
+            document.getElementById('m-water').innerText = "累計水やり: " + waterCount + "回";
+            document.getElementById('m-status').innerText = (diff < LIMIT * 0.5) ? "「幹に力が満ちています」" : "「喉の渇きを感じます」";
             document.getElementById('modal').style.display = 'flex';
         }
 
+        // ピクセル・ウォーター演出
         function doW() {
-            const fx = document.getElementById('water-fx-container');
+            const layer = document.getElementById('water-layer');
             const btn = document.getElementById('wb');
             btn.disabled = true;
-            fx.style.display = 'block';
+            layer.style.display = 'block';
+            layer.innerHTML = '';
+
+            for(let i=0; i<25; i++) {
+                let d = document.createElement('div');
+                d.className = 'pixel-drop';
+                d.style.left = (Math.random() * 80 + 10) + '%';
+                d.style.animationDelay = (Math.random() * 0.8) + 's';
+                layer.appendChild(d);
+            }
 
             setTimeout(() => {
-                fx.style.display = 'none';
+                layer.style.display = 'none';
                 btn.disabled = false;
                 gp += 10; waterCount++; last = Date.now();
                 save(); update();
-            }, 1500);
+            }, 1800);
         }
 
         async function doG() {
@@ -141,15 +162,19 @@
         }
 
         function save() {
-            localStorage.setItem('bonsai_v26', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, start: startDate, species, seed }));
+            localStorage.setItem('bonsai_v27', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, species, seed }));
         }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('gb').disabled = (gp < 50);
             if(img) document.getElementById('bonsai-img-container').innerHTML = `<img src="${img}">`;
+            
             const diff = Date.now() - last;
-            document.getElementById('health-hint').innerText = (diff < LIMIT * 0.5) ? "盆栽は健やかに育っています。" : "水を求めています。";
+            const msg = document.getElementById('health-msg');
+            if(diff < LIMIT * 0.5) msg.innerText = "盆栽は静かに息づいています。";
+            else if(diff < LIMIT * 0.8) msg.innerText = "土が乾き、色が薄くなっています。";
+            else msg.innerText = "至急、水を与えてください。";
         }
     </script>
 </body>
