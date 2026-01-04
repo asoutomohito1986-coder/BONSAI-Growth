@@ -42,4 +42,144 @@
             100% { filter: brightness(1); transform: scale(1); }
         }
 
-        #loading-overlay { display
+        #loading-overlay { display: none; color: #666; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="title-screen">
+        <div style="font-size: 80px;">🌲</div>
+        <h1 style="font-size: 32px; letter-spacing: 2px;">BONSAI GROWTH</h1>
+        <button id="connect-btn" class="btn" style="background: white; color: #0052FF; width: 200px;">Connect Wallet</button>
+    </div>
+
+    <div id="game-screen">
+        <div class="status-grid">
+            <div class="status-card">
+                <div style="font-size: 12px; color: #888;">GROWTH POINT</div>
+                <div class="gp-val"><span id="gp-value">0</span> <small style="font-size: 12px;">GP</small></div>
+            </div>
+            <div class="status-card">
+                <div style="font-size: 12px; color: #888;">ESTIMATED AGE</div>
+                <div class="gp-val"><span id="age-display">0</span> <small style="font-size: 12px;">YEARS</small></div>
+            </div>
+        </div>
+
+        <div id="bonsai-display">🌲</div>
+        <div id="loading-overlay">AIが生成中... ⏳</div>
+        
+        <div class="controls">
+            <button class="btn btn-water" onclick="actionWater()">💧 水やり (+10GP)</button>
+            <button class="btn btn-grow" id="grow-btn" onclick="actionGrow()" disabled>✨ 成長 (50GP)</button>
+        </div>
+
+        <div id="death-info" style="margin-top: 20px; font-size: 12px; color: #d32f2f;"></div>
+        <div id="wallet-addr" style="margin-top: 40px; font-size: 10px; opacity: 0.5;"></div>
+        <button onclick="resetGame()" style="margin-top: 20px; border: none; background: transparent; color: #ccc; cursor: pointer;">[Reset Data]</button>
+    </div>
+
+    <script>
+        let userAddress = "";
+        let gp = 0;
+        let estimatedAge = 0;
+        let lastWatered = Date.now();
+        let currentImg = "";
+        const DEAD_LIMIT = 14 * 24 * 60 * 60 * 1000; // 14日
+
+        async function connect() {
+            if (!window.ethereum) return;
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAddress = accounts[0];
+            loadData();
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            updateUI();
+        }
+
+        function actionWater() {
+            gp += 10;
+            lastWatered = Date.now();
+            const el = document.getElementById('bonsai-display');
+            el.classList.add('shine');
+            setTimeout(() => el.classList.remove('shine'), 800);
+            saveData();
+            updateUI();
+        }
+
+        async function actionGrow() {
+            if (gp < 50) return;
+            gp -= 50;
+            estimatedAge += 5;
+            
+            const display = document.getElementById('bonsai-display');
+            const loading = document.getElementById('loading-overlay');
+            
+            loading.style.display = "block";
+            document.getElementById('grow-btn').disabled = true;
+
+            // AI画像生成（シミュレーション）
+            // 実際はここからあなたのサーバー経由でOpenAIを叩く形になります
+            const seed = Math.floor(Math.random() * 100000);
+            const aiUrl = `https://pollinations.ai/p/bonsai%20tree,%20highly%20detailed,%20masterpiece,%20traditional%20japanese%20style,%20white%20background?width=300&height=300&seed=${seed}&nologo=true`;
+            
+            // 画像のプリロード
+            const img = new Image();
+            img.src = aiUrl;
+            img.onload = () => {
+                currentImg = aiUrl;
+                display.innerHTML = `<img src="${aiUrl}">`;
+                loading.style.display = "none";
+                saveData();
+                updateUI();
+            };
+        }
+
+        function loadData() {
+            const data = JSON.parse(localStorage.getItem('bonsai_ai_v4_' + userAddress)) || 
+                         { gp: 0, estimatedAge: 0, lastWatered: Date.now(), currentImg: "" };
+            gp = data.gp;
+            estimatedAge = data.estimatedAge;
+            lastWatered = data.lastWatered;
+            currentImg = data.currentImg;
+        }
+
+        function saveData() {
+            localStorage.setItem('bonsai_ai_v4_' + userAddress, JSON.stringify({
+                gp: gp, estimatedAge: estimatedAge, lastWatered: lastWatered, currentImg: currentImg
+            }));
+        }
+
+        function updateUI() {
+            document.getElementById('gp-value').innerText = gp;
+            document.getElementById('age-display').innerText = estimatedAge;
+            document.getElementById('grow-btn').disabled = (gp < 50);
+            document.getElementById('wallet-addr').innerText = userAddress;
+
+            const display = document.getElementById('bonsai-display');
+            if (currentImg) {
+                display.innerHTML = `<img src="${currentImg}">`;
+            }
+
+            // 枯死判定
+            const diff = Date.now() - lastWatered;
+            if (diff > DEAD_LIMIT) {
+                display.innerHTML = "🍂";
+                document.getElementById('death-info').innerText = "この盆栽は枯れています（ドライ盆栽）";
+                document.querySelector('.btn-water').disabled = true;
+            } else {
+                const days = Math.ceil((DEAD_LIMIT - diff) / (1000 * 60 * 60 * 24));
+                document.getElementById('death-info').innerText = `あと ${days} 日以内に水やりが必要です`;
+            }
+        }
+
+        function resetGame() {
+            if(confirm("リセットしますか？")) {
+                localStorage.removeItem('bonsai_ai_v4_' + userAddress);
+                location.reload();
+            }
+        }
+
+        window.onload = () => { document.getElementById('connect-btn').onclick = connect; };
+    </script>
+</body>
+</html>
