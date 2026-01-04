@@ -3,18 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BONSAI GROWTH - Staking Link</title>
+    <title>BONSAI GROWTH - GP System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://unpkg.com/@coinbase/wallet-sdk@3.7.1/dist/index.js"></script>
     <style>
         body { text-align: center; background: #f0f4f0; font-family: sans-serif; margin: 0; }
         #title-screen { background: #0052FF; color: white; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #game-screen { display: none; padding: 20px; }
-        .status-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 280px; }
-        .gp-display { font-size: 28px; color: #2e7d32; font-weight: bold; margin: 5px 0; }
-        .bonus-badge { background: #e8f5e9; color: #2e7d32; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-        .bonsai-container { font-size: 120px; margin: 30px 0; }
-        .btn-water { background: #4caf50; color: white; padding: 15px 40px; font-size: 20px; border-radius: 50px; border: none; cursor: pointer; }
+        
+        /* ステータス表示 */
+        .status-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: inline-block; min-width: 250px; margin-bottom: 20px; }
+        .gp-display { font-size: 32px; color: #2e7d32; font-weight: bold; margin: 10px 0; }
+        .rank-badge { background: #e8f5e9; color: #2e7d32; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+        
+        /* 盆栽の見た目 */
+        .bonsai-container { font-size: 120px; margin: 40px 0; transition: transform 0.2s; }
+        .bonsai-container:active { transform: scale(1.1); }
+        
+        /* ボタン */
+        .btn-water { background: #4caf50; color: white; padding: 18px 50px; font-size: 22px; border-radius: 50px; border: none; cursor: pointer; box-shadow: 0 4px 0 #388e3c; }
+        .btn-water:active { transform: translateY(3px); box-shadow: none; }
+        
+        #wallet-addr { font-size: 10px; color: #999; margin-top: 40px; }
     </style>
 </head>
 <body>
@@ -22,116 +32,114 @@
     <div id="title-screen">
         <div style="font-size: 80px;">🌲</div>
         <h1>BONSAI GROWTH</h1>
-        <p>Staking Reward System v3.0</p>
-        <button id="connect-btn" style="padding: 15px 30px; border-radius: 10px; cursor: pointer; font-weight: bold;">ウォレットで接続</button>
+        <p>Your Web3 Bonsai Journey</p>
+        <button id="connect-btn" style="padding: 15px 30px; border-radius: 10px; font-weight: bold; cursor: pointer;">ウォレットでログイン</button>
     </div>
 
     <div id="game-screen">
         <div class="status-card">
-            <div id="rank-display" style="font-weight: bold; color: #666;">RANK: 苗木</div>
+            <div id="rank-display" class="rank-badge">RANK: 苗木</div>
             <div class="gp-display"><span id="gp-value">0</span> GP</div>
-            <div id="bonus-info" class="bonus-badge">Staking Bonus: +0.0000 GP</div>
+            <div style="font-size: 12px; color: #666;">樹齢: <span id="age-display">0</span> 日</div>
         </div>
 
         <div id="bonsai-display" class="bonsai-container">🌱</div>
-
-        <h2>樹齢: <span id="age-display">0</span> 日</h2>
         
-        <button id="water-btn" class="btn-water" onclick="actionWater()">💧 水やり</button>
+        <button class="btn-water" onclick="actionWater()">💧 水やり (+10GP)</button>
         
-        <p id="msg-box" style="margin-top: 20px; color: #555; font-size: 14px;"></p>
-        <p id="wallet-addr" style="font-size: 10px; opacity: 0.5; margin-top: 30px;"></p>
+        <p id="msg-box" style="margin-top: 20px; color: #555; font-weight: bold; height: 1.2em;"></p>
 
-        <button onclick="resetGame()" style="margin-top: 20px; opacity: 0.3;">データリセット</button>
+        <div id="wallet-addr"></div>
+        <button onclick="resetGame()" style="margin-top: 30px; opacity: 0.3; border: none; background: none; cursor: pointer;">[データリセット]</button>
     </div>
 
     <script>
-        const BONSAI_BANK_ADDR = "0xb447894a8FE006Fa2caFe16b7B49E7F2c770d08C";
-        const ABI = ["function balanceOf(address owner) view returns (uint256)"];
-        
         let userAddress = "";
         let gp = 0;
         let age = 0;
-        let stakingBonus = 0;
-        let provider, ethereum;
 
+        // --- 1. 接続機能 ---
         async function connect() {
-            if (!window.ethereum) return;
-            const coinbaseWalletSDK = new CoinbaseWalletSDK({ appName: "BONSAI" });
-            ethereum = coinbaseWalletSDK.makeWeb3Provider("https://mainnet.base.org", 8453);
-            provider = new ethers.providers.Web3Provider(ethereum);
-
+            if (!window.ethereum) { alert("Coinbase Walletアプリで開いてください"); return; }
             try {
-                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 userAddress = accounts[0];
                 
-                // ステーキング量を確認
-                await fetchStakingData();
+                loadData(); // セーブデータを読み込む
                 
-                loadData();
                 document.getElementById('title-screen').style.display = 'none';
                 document.getElementById('game-screen').style.display = 'block';
                 updateUI();
             } catch (e) { console.error(e); }
         }
 
-        async function fetchStakingData() {
-            try {
-                const contract = new ethers.Contract(BONSAI_BANK_ADDR, ABI, provider);
-                const balance = await contract.balanceOf(userAddress);
-                const formattedBalance = parseFloat(ethers.utils.formatEther(balance));
-                
-                // 1億分の1をボーナスとして計算
-                stakingBonus = formattedBalance / 100000000;
-                
-                document.getElementById('bonus-info').innerText = `Staking Bonus: +${stakingBonus.toFixed(6)} GP`;
-            } catch (e) {
-                console.log("Staking data fetch error:", e);
-                stakingBonus = 0;
-            }
-        }
-
+        // --- 2. 水やりアクション (1回10GP) ---
         function actionWater() {
-            const baseGain = 10;
-            const totalGain = baseGain + stakingBonus;
-            
-            gp += totalGain;
+            gp += 10;
             age += 1;
             
-            document.getElementById('msg-box').innerText = `水やり成功！今回獲得: ${totalGain.toFixed(6)} GP`;
+            document.getElementById('msg-box').innerText = "水やり完了！すくすく育っています。";
+            
             saveData();
             updateUI();
+            
+            // 演出：少し大きく揺れる
+            const el = document.getElementById('bonsai-display');
+            el.style.transform = "scale(1.2)";
+            setTimeout(() => el.style.transform = "scale(1.0)", 200);
+            
+            // 3秒後にメッセージを消す
+            setTimeout(() => { document.getElementById('msg-box').innerText = ""; }, 3000);
         }
 
+        // --- 3. セーブ・ロード ---
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('bonsai_v3_' + userAddress)) || { gp: 0, age: 0 };
+            const data = JSON.parse(localStorage.getItem('bonsai_v3_main_' + userAddress)) || { gp: 0, age: 0 };
             gp = data.gp;
             age = data.age;
         }
 
         function saveData() {
-            localStorage.setItem('bonsai_v3_' + userAddress, JSON.stringify({ gp: gp, age: age }));
+            const data = { gp: gp, age: age };
+            localStorage.setItem('bonsai_v3_main_' + userAddress, JSON.stringify(data));
         }
 
+        // --- 4. 画面更新と進化ロジック ---
         function updateUI() {
-            document.getElementById('gp-value').innerText = gp.toFixed(2);
+            document.getElementById('gp-value').innerText = gp;
             document.getElementById('age-display').innerText = age;
-            document.getElementById('wallet-addr').innerText = userAddress;
+            document.getElementById('wallet-addr').innerText = "Wallet: " + userAddress;
 
             const display = document.getElementById('bonsai-display');
-            if (gp >= 100) { display.innerText = "🌳"; }
-            else if (gp >= 50) { display.innerText = "🌲"; }
-            else { display.innerText = "🌱"; }
+            const rank = document.getElementById('rank-display');
+
+            // GPに応じた進化（ここでの数値はテスト用に低めに設定しています）
+            if (gp >= 100) {
+                display.innerText = "🌳"; 
+                rank.innerText = "RANK: 老樹";
+                rank.style.background = "#fff3e0";
+                rank.style.color = "#ef6c00";
+            } else if (gp >= 50) {
+                display.innerText = "🌲"; 
+                rank.innerText = "RANK: 若木";
+                rank.style.background = "#e8f5e9";
+                rank.style.color = "#2e7d32";
+            } else {
+                display.innerText = "🌱"; 
+                rank.innerText = "RANK: 苗木";
+            }
         }
 
         function resetGame() {
-            if(confirm("リセットしますか？")) {
-                localStorage.removeItem('bonsai_v3_' + userAddress);
+            if(confirm("このウォレットの盆栽データをリセットしますか？")) {
+                localStorage.removeItem('bonsai_v3_main_' + userAddress);
                 location.reload();
             }
         }
 
-        window.onload = () => { document.getElementById('connect-btn').onclick = connect; };
+        window.onload = () => {
+            document.getElementById('connect-btn').onclick = connect;
+        };
     </script>
 </body>
 </html>
