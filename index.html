@@ -3,70 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI STYLE EVOLUTION</title>
+    <title>BONSAI GRADUAL EVOLUTION</title>
     <style>
         body { text-align: center; background: #121212; color: #fff; font-family: sans-serif; margin: 0; }
-        #style-select { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #222; }
-        #game-screen { display: none; padding: 20px; }
-        .stats { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
-        .card { background: #333; padding: 15px; border-radius: 12px; flex: 1; max-width: 100px; border: 1px solid #444; }
-        .val { font-size: 20px; color: #4caf50; font-weight: bold; }
-        #view { width: 280px; height: 280px; background: #000; margin: 20px auto; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; image-rendering: pixelated; }
+        #game-screen { padding: 15px; }
+        .stats { display: flex; justify-content: center; gap: 8px; margin: 15px 0; }
+        .card { background: #333; padding: 10px; border-radius: 12px; flex: 1; border: 1px solid #444; }
+        .val { font-size: 18px; color: #4caf50; font-weight: bold; }
+        
+        #view { width: 280px; height: 280px; background: #000; margin: 15px auto; border-radius: 20px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 4px solid #333; image-rendering: pixelated; }
         #view img { width: 100%; height: 100%; object-fit: cover; }
-        .btn { padding: 16px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; margin: 8px; width: 90%; max-width: 300px; cursor: pointer; }
-        .btn-style { background: #fff; color: #333; }
-        .btn-w { background: #4caf50; color: #fff; }
-        .btn-g { background: #ff9800; color: #fff; }
-        .btn:disabled { opacity: 0.2; }
+
+        .btn { padding: 15px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; margin: 5px; width: 90%; max-width: 320px; cursor: pointer; }
+        .btn-w { background: #4caf50; color: #fff; box-shadow: 0 4px 0 #2e7d32; }
+        .btn-g { background: #ff9800; color: #fff; box-shadow: 0 4px 0 #e68a00; }
+        
+        .style-selector { display: flex; justify-content: center; gap: 5px; margin: 10px 0; flex-wrap: wrap; }
+        .btn-s { padding: 8px 12px; font-size: 12px; border-radius: 5px; background: #444; color: #ccc; border: 1px solid #666; width: auto; }
+        .btn-s.active { background: #0052FF; color: #fff; border-color: #fff; }
+        
+        .btn:disabled { opacity: 0.2; transform: translateY(4px); box-shadow: none; }
+        #timer { color:#ffeb3b; font-weight: bold; height:20px; margin:5px; }
     </style>
 </head>
 <body>
-
-    <div id="style-select">
-        <h2>育成スタイルを選んでください</h2>
-        <button class="btn btn-style" onclick="startWith('chokkan')">直幹 (Straight)</button>
-        <button class="btn btn-style" onclick="startWith('shakan')">斜幹 (Slanted)</button>
-        <button class="btn btn-style" onclick="startWith('moyogi')">模様木 (Curved)</button>
-    </div>
 
     <div id="game-screen">
         <div class="stats">
             <div class="card">GP<br><span id="ui-gp" class="val">0</span></div>
             <div class="card">樹齢<br><span id="ui-age" class="val">0</span></div>
-            <div class="card">型<br><span id="ui-style" class="val">-</span></div>
+            <div class="card">目標の型<br><span id="ui-target" class="val">-</span></div>
         </div>
+
         <div id="view">🌱</div>
-        <div id="timer" style="color:#ffeb3b; height:20px; margin:10px; font-weight:bold;"></div>
+        <div id="timer"></div>
+
         <button class="btn btn-w" onclick="doW()">💧 水やり (+10GP)</button>
         <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長 (50GP)</button>
-        <div id="status" style="font-size:12px; color:#888; margin-top:10px;"></div>
-        <button onclick="localStorage.clear();location.reload();" style="margin-top:40px; opacity:0.2; background:none; color:#fff; border:none;">[Style Reset]</button>
+        
+        <div style="margin-top: 20px; font-size: 13px; color: #aaa;">▼ 次の成長で目指す型を選択</div>
+        <div class="style-selector">
+            <button id="s-chokkan" class="btn-s" onclick="setTarget('chokkan')">直幹</button>
+            <button id="s-shakan" class="btn-s" onclick="setTarget('shakan')">斜幹</button>
+            <button id="s-moyogi" class="btn-s" onclick="setTarget('moyogi')">模様木</button>
+        </div>
+
+        <div id="status" style="font-size:11px; color:#666; margin-top:15px;"></div>
+        <button onclick="if(confirm('リセットしますか？')){localStorage.clear();location.reload();}" style="margin-top:30px; opacity:0.1; background:none; color:#fff; border:none;">[Data Reset]</button>
     </div>
 
     <script>
-        let gp=0, age=0, img="", last=Date.now(), style="";
+        let gp=0, age=0, img="", last=Date.now(), targetStyle="chokkan";
         const LIMIT = 1209600000;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v13');
+            const s = localStorage.getItem('bonsai_v14');
             if(s) {
                 const d = JSON.parse(s);
-                style = d.style;
-                showGame();
-                load(d);
+                gp=d.gp||0; age=d.age||0; img=d.img||""; last=d.last||Date.now(); targetStyle=d.target||"chokkan";
             }
+            update();
         };
 
-        function startWith(s) {
-            style = s;
-            showGame();
+        function setTarget(s) {
+            targetStyle = s;
             save();
             update();
-        }
-
-        function showGame() {
-            document.getElementById('style-select').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
         }
 
         function doW() { gp+=10; last=Date.now(); save(); update(); }
@@ -74,41 +76,45 @@
         async function doG() {
             if(gp<50) return;
             gp-=50; age+=5;
+            
             const v=document.getElementById('view'), b=document.getElementById('gb'), t=document.getElementById('timer');
             v.style.opacity="0.4"; b.disabled=true;
             
             let s=10;
             const i=setInterval(()=>{ t.innerText="Growing... "+s+"s"; s--; if(s<0)clearInterval(i); },1000);
 
-            // スタイルに応じたプロンプト調整
-            let stylePrompt = "chokkan, formal upright style";
-            if(style === 'shakan') stylePrompt = "shakan, slanted trunk style, leaning";
-            if(style === 'moyogi') stylePrompt = "moyogi, informal upright style, curvy trunk";
-
-            let stage = (age < 50) ? "young sprout" : (age < 150) ? "mature tree" : "ancient majestic tree";
-            const prompt = encodeURIComponent(`16-bit_pixel_art, ${stylePrompt}, ${stage}, bonsai, in_pot, white_background`);
+            // --- 徐々に変化させるプロンプト戦略 ---
+            // targetStyleだけでなく、現在のageも混ぜることで「移行期」を表現
+            let styleName = (targetStyle==='chokkan'?'formal upright':targetStyle==='shakan'?'slanted':'informal upright curved');
+            
+            // 樹齢に応じたベース指示
+            let stage = (age < 50) ? "young sprout" : (age < 150) ? "growing tree" : "ancient majestic tree";
+            
+            // 「transitioning to（〜へ移行中）」という言葉をプロンプトに混ぜることで、急激な変化を抑制
+            const prompt = encodeURIComponent(`16-bit_pixel_art, bonsai_tree, transitioning_to_${styleName}_style, ${stage}, in_pot, white_background, sharp_pixels`);
+            
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${Math.floor(Math.random()*9999)}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
             temp.src = url;
             temp.onload = () => {
-                clearInterval(i); t.innerText="SUCCESS!"; img=url;
+                clearInterval(i); t.innerText="EVOLVED!";
+                img = url;
                 v.innerHTML=`<img src="${url}">`; v.style.opacity="1";
                 save(); update();
                 setTimeout(()=>t.innerText="",2000);
             };
         }
 
-        function save() { localStorage.setItem('bonsai_v13', JSON.stringify({gp,age,img,last,style})); }
-        function load(d) { gp=d.gp||0; age=d.age||0; img=d.img||""; last=d.last||Date.now(); style=d.style; }
+        function save() { 
+            localStorage.setItem('bonsai_v14', JSON.stringify({gp,age,img,last,target:targetStyle})); 
+        }
         
         function update() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('ui-age').innerText = age;
-            document.getElementById('ui-style').innerText = (style==='chokkan'?'直幹':style==='shakan'?'斜幹':'模様木');
             document.getElementById('gb').disabled = (gp < 50);
-            if(img && (Date.now()-last <= LIMIT)) document.getElementById('view').innerHTML=`<img src="${img}">`;
-        }
-    </script>
-</body>
-</html>
+            
+            // 目標スタイルの表示更新
+            const labels = {chokkan:'直幹', shakan:'斜幹', moyogi:'模様木'};
+            document.getElementById('ui-target').innerText = labels[targetStyle];
