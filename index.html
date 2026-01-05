@@ -3,67 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v30</title>
+    <title>BONSAI HD PIXEL v31 - FX FIXED</title>
     <style>
-        /* Safariの見切れ対策：100vhの代わりに100dvh（Dynamic Viewport Height）を使用 */
         body { 
-            text-align: center; 
-            background: #0f0f0f; 
-            color: #fff; 
-            font-family: sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            height: 100dvh; 
-            display: flex;
-            flex-direction: column;
+            text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
+            margin: 0; padding: 0; overflow: hidden; height: 100dvh; 
+            display: flex; flex-direction: column;
         }
 
         #game-screen { 
-            flex: 1; /* 余ったスペースを埋める */
-            padding: 10px 20px;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            box-sizing: border-box;
+            flex: 1; padding: 10px 20px; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; box-sizing: border-box;
         }
         
         .gp-display { margin-bottom: 10px; flex-shrink: 0; }
         .val { font-size: 28px; color: #4caf50; font-weight: bold; }
         
+        /* 盆栽コンテナ */
         #view { 
-            width: min(280px, 70vw); 
-            height: min(280px, 70vw); 
-            background: #000; 
-            border-radius: 30px; 
+            width: min(280px, 70vw); height: min(280px, 70vw); 
+            background: #000; border-radius: 30px; 
             display: flex; align-items: center; justify-content: center; 
             overflow: hidden; border: 4px solid #222; position: relative;
-            flex-shrink: 0; /* 縮まないように固定 */
+            flex-shrink: 0; z-index: 1;
         }
-        #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+        #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; z-index: 2; position: relative; }
 
-        /* 水演出 */
-        #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; display: none; }
-        .pixel-drop { position: absolute; width: 4px; height: 6px; background: #00e5ff; animation: drop-fall 0.6s linear infinite; }
-        @keyframes drop-fall { 0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(280px); opacity: 0; } }
-
-        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); color: #4caf50; font-weight: bold; align-items: center; justify-content: center; z-index: 20; }
-
-        /* 操作系：下部に余裕を持たせる */
-        .controls { 
-            width: 100%; 
-            max-width: 320px; 
-            margin-top: 10px;
-            padding-bottom: env(safe-area-inset-bottom); /* iPhoneのホームバー対策 */
-            flex-shrink: 0;
+        /* 水演出レイヤー：z-indexを上げて確実に手前に */
+        #water-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; z-index: 100; display: none; 
         }
-        .btn { padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; margin: 5px 0; width: 100%; cursor: pointer; }
-        .btn-w { background: #1b5e20; color: #fff; }
-        .btn-g { background: #e65100; color: #fff; }
-        .btn:disabled { opacity: 0.2; }
+        
+        /* 水滴（ドット）のスタイル修正 */
+        .pixel-drop { 
+            position: absolute; 
+            width: 4px; height: 8px; /* 少し長くして見やすく */
+            background: #00e5ff; 
+            box-shadow: 0 0 4px #00e5ff; /* 発光させて視認性アップ */
+            animation: drop-fall 0.7s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite; 
+        }
 
-        #health-msg { font-size: 12px; color: #555; margin: 8px 0; font-style: italic; flex-shrink: 0; }
+        /* アニメーション：コンテナの高さ分しっかり落とす */
+        @keyframes drop-fall { 
+            0% { transform: translateY(-20px); opacity: 0; } 
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(300px); opacity: 0; } 
+        }
+
+        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); color: #4caf50; font-weight: bold; align-items: center; justify-content: center; z-index: 200; }
+
+        .controls { width: 100%; max-width: 320px; margin-top: 10px; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
+        .btn { padding: 15px; border-radius: 12px; border: none; font-weight: bold; font-size: 16px; margin: 5px 0; width: 100%; cursor: pointer; transition: 0.1s; }
+        .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d3210; }
+        .btn-w:active { transform: translateY(2px); box-shadow: 0 2px 0 #0d3210; }
+        .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #8a3100; }
+        .btn-g:active { transform: translateY(2px); box-shadow: 0 2px 0 #8a3100; }
+        .btn:disabled { opacity: 0.2; pointer-events: none; }
+
+        #health-msg { font-size: 12px; color: #555; margin: 8px 0; font-style: italic; }
         .dropdown { background: #1a1a1a; color: #aaa; border: 1px solid #333; padding: 10px; border-radius: 8px; width: 100%; font-size: 14px; }
     </style>
 </head>
@@ -83,7 +82,6 @@
         <div class="controls">
             <button id="wb" class="btn btn-w" onclick="doW()">💧 水やり</button>
             <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長を促す</button>
-            
             <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
                 <option value="chokkan">直幹 (Straight)</option>
                 <option value="shakan">斜幹 (Slanted)</option>
@@ -108,7 +106,7 @@
         const LIMIT = 1209600000;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v30');
+            const s = localStorage.getItem('bonsai_v31');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; age=d.age; img=d.img; last=d.last; targetStyle=d.target; waterCount=d.wCount; species=d.species; seed=d.seed;
@@ -137,19 +135,25 @@
             btn.disabled = true;
             layer.style.display = 'block';
             layer.innerHTML = '';
-            for(let i=0; i<25; i++) {
+            
+            // 粒の数を増やし、密度を高める
+            for(let i=0; i<40; i++) {
                 let d = document.createElement('div');
                 d.className = 'pixel-drop';
-                d.style.left = (Math.random() * 80 + 10) + '%';
-                d.style.animationDelay = (Math.random() * 0.8) + 's';
+                // 盆栽の画像がある中央部分に集中的に降らせる
+                d.style.left = (Math.random() * 60 + 20) + '%'; 
+                d.style.animationDelay = (Math.random() * 0.5) + 's';
+                // 落下速度にばらつきを持たせる
+                d.style.animationDuration = (Math.random() * 0.3 + 0.4) + 's';
                 layer.appendChild(d);
             }
+
             setTimeout(() => {
                 layer.style.display = 'none';
                 btn.disabled = false;
                 gp += 10; waterCount++; last = Date.now();
                 save(); update();
-            }, 1500);
+            }, 1800);
         }
 
         async function doG() {
@@ -175,7 +179,7 @@
         }
 
         function save() {
-            localStorage.setItem('bonsai_v30', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, species, seed }));
+            localStorage.setItem('bonsai_v31', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, species, seed }));
         }
 
         function update() {
