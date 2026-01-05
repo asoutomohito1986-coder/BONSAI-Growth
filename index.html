@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v34 - HIDDEN AFFECTION</title>
+    <title>BONSAI HD PIXEL v35 - FIRST CHOICE</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -17,7 +17,6 @@
         #view { 
             width: min(280px, 70vw); height: min(280px, 70vw); 
             background: #000; border-radius: 30px; border: 4px solid #222; position: relative; overflow: hidden; flex-shrink: 0;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
         
@@ -28,16 +27,18 @@
         #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); color: #4caf50; font-weight: bold; align-items: center; justify-content: center; z-index: 200; }
 
         .controls { width: 100%; max-width: 320px; margin-top: 10px; padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
-        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; font-size: 15px; margin: 4px 0; width: 100%; cursor: pointer; transition: 0.1s; }
-        .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d3210; }
-        .btn-w:active { transform: translateY(2px); box-shadow: none; }
-        .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #8a3100; }
-        .btn-g:active { transform: translateY(2px); box-shadow: none; }
+        .btn { padding: 12px; border-radius: 12px; border: none; font-weight: bold; font-size: 15px; margin: 4px 0; width: 100%; cursor: pointer; }
+        .btn-w { background: #1b5e20; color: #fff; }
+        .btn-g { background: #e65100; color: #fff; }
         .btn-reset { background: transparent; color: #444; font-size: 10px; margin-top: 10px; text-decoration: underline; }
         .btn:disabled { opacity: 0.2; pointer-events: none; }
 
-        .dropdown { background: #1a1a1a; color: #888; border: 1px solid #333; padding: 8px; border-radius: 8px; width: 100%; font-size: 13px; margin: 4px 0; outline: none; }
-        #health-msg { font-size: 13px; color: #888; margin: 8px 0; min-height: 1.2em; font-style: italic; letter-spacing: 0.05em; }
+        .dropdown { background: #1a1a1a; color: #888; border: 1px solid #333; padding: 8px; border-radius: 8px; width: 100%; font-size: 13px; margin: 4px 0; }
+        #health-msg { font-size: 13px; color: #888; margin: 8px 0; min-height: 1.2em; font-style: italic; }
+        
+        /* 初回のみ表示するエリア */
+        #setup-area { width: 100%; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -53,19 +54,22 @@
             <div id="bonsai-img-container">🌱</div>
         </div>
         
-        <div id="health-msg">盆栽を見守っています...</div>
+        <div id="health-msg"></div>
 
         <div class="controls">
+            <div id="setup-area">
+                <p style="font-size: 11px; color: #666; margin-bottom: 4px;">-- 最初に樹種を選んでください --</p>
+                <select id="species-select" class="dropdown" onchange="species=this.value;">
+                    <option value="Black Pine">黒松 (Black Pine)</option>
+                    <option value="Maple">楓 (Maple)</option>
+                    <option value="Cherry Blossom">桜 (Sakura)</option>
+                    <option value="Juniper">真柏 (Juniper)</option>
+                </select>
+            </div>
+
             <button id="wb" class="btn btn-w" onclick="doW()">💧 水やり</button>
             <button id="gb" class="btn btn-g" onclick="doG()" disabled>✨ 成長を促す</button>
             
-            <select id="species-select" class="dropdown" onchange="species=this.value;save();">
-                <option value="Black Pine">黒松 (Black Pine)</option>
-                <option value="Maple">楓 (Maple)</option>
-                <option value="Cherry Blossom">桜 (Sakura)</option>
-                <option value="Juniper">真柏 (Juniper)</option>
-            </select>
-
             <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();">
                 <option value="chokkan">直幹 (Straight)</option>
                 <option value="shakan">斜幹 (Slanted)</option>
@@ -86,16 +90,14 @@
     </div>
 
     <script>
-        // love (愛情度) は隠しパラメータ
-        let gp=0, love=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", species="Black Pine", seed=0;
+        let gp=0, love=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", species="Black Pine", seed=0, isFixed=false;
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v34');
+            const s = localStorage.getItem('bonsai_v35');
             if(s) {
                 const d = JSON.parse(s);
-                gp=d.gp; love=d.love || 0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed;
-                document.getElementById('species-select').value = species;
+                gp=d.gp; love=d.love || 0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed || false;
                 document.getElementById('style-select').value = targetStyle;
                 update();
             } else {
@@ -105,43 +107,39 @@
         };
 
         function resetGame() {
-            if(confirm("最初からやり直しますか？")) {
-                localStorage.removeItem('bonsai_v34');
+            if(confirm("最初からやり直しますか？樹種も選び直せます。")) {
+                localStorage.removeItem('bonsai_v35');
                 location.reload();
             }
         }
 
         function doW() {
+            isFixed = true; // 初回の操作で樹種を固定
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block';
             layer.innerHTML = '';
             for(let i=0; i<40; i++) {
-                let d = document.createElement('div');
-                d.className = 'pixel-drop';
+                let d = document.createElement('div'); d.className = 'pixel-drop';
                 d.style.left = (Math.random() * 80 + 10) + '%';
                 d.style.animationDelay = (Math.random() * 0.5) + 's';
                 layer.appendChild(d);
             }
             setTimeout(() => {
                 layer.style.display = 'none';
-                gp += 10;
-                love += 5; // 愛情度上昇
-                last = Date.now();
+                gp += 10; love += 5; last = Date.now();
                 save(); update();
             }, 1500);
         }
 
         async function doG() {
             if(gp < COST) return;
+            isFixed = true; 
             gp -= COST; age += 0.1;
             const overlay = document.getElementById('loading-overlay');
             overlay.style.display = 'flex';
 
             let plantType = age < 1.0 ? "tiny_seedling" : (age < 3.0 ? "young_sapling" : "bonsai_tree");
-            
-            // 愛情度(隠し)に応じて、画像に微妙な輝きや色鮮やかさをプラス
             let mood = love > 150 ? "shimmering_vibrant_aura" : (love > 80 ? "vibrant_healthy_color" : "natural_pixels");
-
             const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${plantType},in_a_ceramic_bonsai_pot,grounded,${species},${targetStyle}_style,${mood},growth_stage_${age.toFixed(1)},masterpiece,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
 
@@ -156,7 +154,7 @@
         }
 
         function save() {
-            localStorage.setItem('bonsai_v34', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed }));
+            localStorage.setItem('bonsai_v35', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
@@ -164,24 +162,27 @@
             document.getElementById('gb').disabled = (gp < COST);
             if(img) document.getElementById('bonsai-img-container').innerHTML = `<img src="${img}">`;
             
-            // 隠しパラメータloveに基づいてメッセージを変える
+            // 樹種が固定されたらセレクトボックスを隠す
+            if(isFixed) {
+                document.getElementById('setup-area').classList.add('hidden');
+            } else {
+                document.getElementById('setup-area').classList.remove('hidden');
+            }
+
             const msg = document.getElementById('health-msg');
-            if(love > 150) msg.innerText = "盆栽から、言葉にできない喜びを感じます。";
-            else if(love > 80) msg.innerText = "幹に瑞々しい生命力が宿っています。";
-            else if(love > 30) msg.innerText = "静かに、そして確実に息づいています。";
-            else msg.innerText = "盆栽を見守っています...";
+            if(love > 150) msg.innerText = "この盆栽との絆は、何物にも代えがたいものです。";
+            else if(love > 80) msg.innerText = "あなたの愛情を一身に受けて輝いています。";
+            else if(love > 30) msg.innerText = "新しい環境に馴染んできたようです。";
+            else msg.innerText = "静かに、そして確実に息づいています。";
         }
 
         function showModal() {
             document.getElementById('m-species').innerText = species.toUpperCase();
             document.getElementById('m-age').innerText = "推定樹齢: " + age.toFixed(1) + "年";
-            
-            // モーダル内でも数値は出さず、テキストで表現
             let statusText = "穏やかな表情をしています。";
-            if(love > 200) statusText = "あなたとの深い絆を感じ、神々しく輝いています。";
-            else if(love > 100) statusText = "手入れを喜び、非常に力強く成長しています。";
-            else if(love > 50) statusText = "少しずつ、心を通わせ始めたようです。";
-            
+            if(love > 200) statusText = "あなたを唯一の主と認め、深く信頼しています。";
+            else if(love > 100) statusText = "あなたの丁寧なお世話を、心から喜んでいるようです。";
+            else if(love > 50) statusText = "あなたとの時間に安らぎを感じています。";
             document.getElementById('m-status').innerText = statusText;
             document.getElementById('modal').style.display = 'flex';
         }
