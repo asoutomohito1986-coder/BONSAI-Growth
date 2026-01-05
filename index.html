@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BONSAI HD PIXEL - PURE VERSION</title>
+    <title>BONSAI HD PIXEL - PURE VERSION v29</title>
     <style>
         body { text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow: hidden; }
         #game-screen { padding: 20px; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -91,17 +91,17 @@
 
     <script>
         let gp=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", waterCount=0, species="Black Pine", seed=0;
-        const LIMIT = 1209600000;
+        const LIMIT = 1209600000; // 14 days in milliseconds
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v27');
+            const s = localStorage.getItem('bonsai_v29'); // Updated version
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; age=d.age; img=d.img; last=d.last; targetStyle=d.target; waterCount=d.wCount; species=d.species; seed=d.seed;
                 document.getElementById('style-select').value = targetStyle;
                 update();
             } else {
-                seed = Math.floor(Math.random()*1000000);
+                seed = Math.floor(Math.random()*1000000); // Random seed for new game
                 update();
             }
         };
@@ -123,13 +123,13 @@
             const btn = document.getElementById('wb');
             btn.disabled = true;
             layer.style.display = 'block';
-            layer.innerHTML = '';
+            layer.innerHTML = ''; // Clear previous drops
 
-            for(let i=0; i<25; i++) {
+            for(let i=0; i<25; i++) { // Generate 25 pixel drops
                 let d = document.createElement('div');
                 d.className = 'pixel-drop';
-                d.style.left = (Math.random() * 80 + 10) + '%';
-                d.style.animationDelay = (Math.random() * 0.8) + 's';
+                d.style.left = (Math.random() * 80 + 10) + '%'; // Random horizontal position
+                d.style.animationDelay = (Math.random() * 0.8) + 's'; // Stagger animation start
                 layer.appendChild(d);
             }
 
@@ -138,7 +138,7 @@
                 btn.disabled = false;
                 gp += 10; waterCount++; last = Date.now();
                 save(); update();
-            }, 1800);
+            }, 1800); // Animation duration
         }
 
         async function doG() {
@@ -148,7 +148,19 @@
             overlay.style.display = 'flex';
             document.getElementById('gb').disabled = true;
 
-            const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species}_bonsai,${targetStyle}_style,growth_stage_${age.toFixed(1)},masterpiece,white_background`);
+            // プロンプトを強化し、どんな成長段階でも「鉢」に植わっていることを強調
+            // seedling/saplingの時も鉢に入っているようにする
+            let plantType = "bonsai";
+            if (age < 1.0) plantType = "tiny_seedling_with_a_few_leaves"; // 苗木強調
+            else if (age < 3.0) plantType = "young_sapling"; // 若木強調
+            
+            const prompt = encodeURIComponent(
+                `high_definition_pixel_art,isometric,${plantType},` +
+                `in_a_simple_ceramic_bonsai_pot,grounded,` + // 「鉢に入って設置されている」を強調
+                `${species},${targetStyle}_style,growth_stage_${age.toFixed(1)},` +
+                `masterpiece,white_background`
+            );
+            
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
@@ -159,10 +171,16 @@
                 overlay.style.display = 'none';
                 save(); update();
             };
+            temp.onerror = () => { // エラー時のフォールバック
+                console.error("Failed to load image for prompt: ", prompt);
+                overlay.style.display = 'none';
+                document.getElementById('gb').disabled = false; // ボタンを再有効化
+                // エラーメッセージなどをユーザーに表示することも可能
+            };
         }
 
         function save() {
-            localStorage.setItem('bonsai_v27', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, species, seed }));
+            localStorage.setItem('bonsai_v29', JSON.stringify({ gp, age, img, last, target: targetStyle, wCount: waterCount, species, seed }));
         }
 
         function update() {
