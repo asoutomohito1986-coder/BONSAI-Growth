@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v41 - GROWTH POLICY</title>
+    <title>BONSAI HD PIXEL v42 - EMO-STATUS</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
             margin: 0; padding: 0; overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
         }
         
+        /* ログイン画面 */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 500; transition: opacity 0.3s;
         }
 
+        /* ゲーム画面 */
         #game-screen { 
             flex: 1; padding: 15px; display: flex; flex-direction: column; 
             align-items: center; justify-content: space-around; 
@@ -25,6 +27,7 @@
 
         .val { font-size: 28px; color: #4caf50; font-weight: bold; }
 
+        /* 盆栽コンテナ */
         #view { 
             width: min(300px, 80vw); height: min(300px, 80vw); 
             background: #000; border-radius: 40px; border: 4px solid #222; 
@@ -35,15 +38,17 @@
         #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
         
+        /* 水滴エフェクト */
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
         .pixel-drop { 
             position: absolute; width: 3px; height: 8px; background: #00e5ff; 
             box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.5s linear infinite; 
         }
         @keyframes drop-fall { 
-            0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(300px); opacity: 0; }
+            0% { transform: translateY(-10px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(300px); opacity: 0; }
         }
         
+        /* 爆速生成オーバーレイ */
         #loading-overlay { 
             display: none; position: absolute; top:0; left:0; width:100%; height:100%; 
             background: rgba(0,0,0,0.9); color: #4caf50; font-weight: bold; 
@@ -53,18 +58,19 @@
         #p-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; }
 
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-bottom: env(safe-area-inset-bottom); }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; outline: none; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
         .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn:disabled { opacity: 0.2; pointer-events: none; }
 
-        /* スタイル選択エリアの装飾 */
+        /* 育成方針UI */
         .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; margin-top: 5px; }
-        .style-label { font-size: 10px; color: #4caf50; margin-bottom: 5px; display: block; font-weight: bold; }
-        .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; }
+        .style-label { font-size: 10px; color: #4caf50; margin-bottom: 5px; display: block; font-weight: bold; letter-spacing: 1px; }
+        .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; cursor: pointer; }
         
         #health-msg { font-size: 14px; color: #888; font-style: italic; min-height: 1.5em; }
-        .btn-reset { background: transparent; color: #333; font-size: 11px; border: none; text-decoration: underline; margin-top: 5px; }
+        .btn-reset { background: transparent; color: #333; font-size: 11px; border: none; text-decoration: underline; margin-top: 5px; cursor: pointer; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -84,7 +90,7 @@
         <div id="view" onclick="showModal()">
             <div id="water-layer"></div>
             <div id="loading-overlay">
-                <div id="loading-txt">GENERATING...</div>
+                <div id="loading-txt" style="letter-spacing: 2px;">GENERATING...</div>
                 <div class="progress-container"><div id="p-bar"></div></div>
             </div>
             <div id="bonsai-img-container"><div style="font-size:50px; opacity:0.1;">🪴</div></div>
@@ -94,12 +100,15 @@
 
         <div class="controls">
             <div id="setup-area">
-                <select id="species-select" class="dropdown style-box">
-                    <option value="Black Pine">黒松 (Black Pine)</option>
-                    <option value="Maple">楓 (Maple)</option>
-                    <option value="Cherry Blossom">桜 (Sakura)</option>
-                    <option value="Juniper">真柏 (Juniper)</option>
-                </select>
+                <div class="style-box">
+                    <span class="style-label">CHOOSE SPECIES / 樹種選択</span>
+                    <select id="species-select" class="dropdown">
+                        <option value="Black Pine">黒松 (Black Pine)</option>
+                        <option value="Maple">楓 (Maple)</option>
+                        <option value="Cherry Blossom">桜 (Sakura)</option>
+                        <option value="Juniper">真柏 (Juniper)</option>
+                    </select>
+                </div>
                 <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">START GROWTH</button>
             </div>
 
@@ -120,12 +129,36 @@
         </div>
     </div>
 
-    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-        <div style="background:#111; padding:30px; border-radius:20px; width:80%; max-width:280px; text-align:left; border-left:4px solid #4caf50;" onclick="event.stopPropagation()">
-            <h3 id="m-species" style="color:#fff; margin:0 0 10px 0;"></h3>
-            <p id="m-age" style="color:#888; font-size:14px;"></p>
-            <p id="m-policy" style="color:#4caf50; font-size:12px; margin:5px 0; font-weight:bold;"></p>
-            <div id="m-status" style="margin-top:15px; color:#aaa; font-size:13px; border-top:1px solid #222; padding-top:10px;"></div>
+    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
+        <div style="background:#111; padding:25px; border-radius:30px; width:85%; max-width:300px; text-align:left; border:1px solid #333; box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
+                <div>
+                    <h3 id="m-species" style="color:#fff; margin:0; font-size:22px; letter-spacing:1px;"></h3>
+                    <span id="m-policy" style="color:#4caf50; font-size:11px; font-weight:bold; border:1px solid #4caf50; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:5px;"></span>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:10px; color:#666;">EST. AGE</div>
+                    <div id="m-age" style="color:#fff; font-size:18px; font-weight:bold;"></div>
+                </div>
+            </div>
+
+            <div style="background:#1a1a1a; padding:15px; border-radius:15px; margin-bottom:15px;">
+                <div style="font-size:11px; color:#888; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">STATUS / 盆栽の様子</div>
+                <div id="m-status-desc" style="color:#ddd; font-size:13px; line-height:1.6; min-height:60px;"></div>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div style="background:#1a1a1a; padding:10px; border-radius:10px;">
+                    <div style="font-size:9px; color:#666;">BOND / 絆</div>
+                    <div id="m-bond-lv" style="color:#4caf50; font-size:14px; font-weight:bold;"></div>
+                </div>
+                <div style="background:#1a1a1a; padding:10px; border-radius:10px;">
+                    <div style="font-size:9px; color:#666;">VITAL / 樹勢</div>
+                    <div id="m-vital" style="color:#ff9800; font-size:14px; font-weight:bold;">良好</div>
+                </div>
+            </div>
+            
+            <button class="btn btn-w" style="margin-top:20px; width:100%; height:50px;">閉じる</button>
         </div>
     </div>
 
@@ -134,7 +167,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v41');
+            const s = localStorage.getItem('bonsai_v42');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -144,15 +177,20 @@
         };
 
         function enterGame() {
-            document.getElementById('login-screen').style.opacity = '0';
+            const login = document.getElementById('login-screen');
+            const game = document.getElementById('game-screen');
+            login.style.opacity = '0';
             setTimeout(() => {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('game-screen').classList.add('active');
+                login.style.display = 'none';
+                game.classList.add('active');
             }, 300);
         }
 
         function resetGame() {
-            if(confirm("RESET?")) { localStorage.removeItem('bonsai_v41'); location.reload(); }
+            if(confirm("データを全て消去し、最初からやり直しますか？")) { 
+                localStorage.removeItem('bonsai_v42'); 
+                location.reload(); 
+            }
         }
 
         function showMainUI() {
@@ -163,13 +201,16 @@
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; showMainUI(); await generateBonsai();
+            isFixed = true; 
+            showMainUI(); 
+            await generateBonsai();
         }
 
         async function generateBonsai() {
             const overlay = document.getElementById('loading-overlay');
             const pBar = document.getElementById('p-bar');
             overlay.style.display = 'flex';
+            
             let progress = 0;
             const pInterval = setInterval(() => {
                 progress += (98 - progress) * 0.2;
@@ -212,11 +253,12 @@
 
         async function doG() {
             if(gp < COST) return;
-            gp -= COST; age += 0.1; await generateBonsai();
+            gp -= COST; age += 0.1; 
+            await generateBonsai();
         }
 
         function save() {
-            localStorage.setItem('bonsai_v41', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
+            localStorage.setItem('bonsai_v42', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
@@ -233,10 +275,30 @@
         function showModal() {
             if(!isFixed) return;
             const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
+            
             document.getElementById('m-species').innerText = species.toUpperCase();
-            document.getElementById('m-age').innerText = "AGE: " + age.toFixed(1);
-            document.getElementById('m-policy').innerText = "POLICY: " + styleName;
-            document.getElementById('m-status').innerText = (love > 100) ? "あなたとの強い絆が、枝ぶりに現れています。" : "今後の成長が楽しみな一鉢です。";
+            document.getElementById('m-age').innerText = age.toFixed(1) + " yrs";
+            document.getElementById('m-policy').innerText = styleName;
+
+            let statusText = "";
+            let bondLv = "";
+
+            if (love > 200) {
+                bondLv = "皆伝 (Master)";
+                statusText = `主の心を知り尽くしたような、威厳ある姿です。${styleName}の形に沿って、一葉一葉が完璧な調和を保っています。`;
+            } else if (love > 100) {
+                bondLv = "親密 (Close)";
+                statusText = `手入れの跡が美しく馴染み、樹勢は最高潮です。${styleName}を目指す力強い生命力を感じさせ、見る者に安らぎを与えます。`;
+            } else if (love > 50) {
+                bondLv = "信頼 (Trust)";
+                statusText = `この環境に慣れ、根がしっかりと張っています。${styleName}としての個性が少しずつ芽生え始めています。`;
+            } else {
+                bondLv = "知己 (Aware)";
+                statusText = `まだ若々しく、これからの導きを待っている状態です。静かに、しかし確実にあなたの世話に応えようとしています。`;
+            }
+
+            document.getElementById('m-status-desc').innerText = statusText;
+            document.getElementById('m-bond-lv').innerText = bondLv;
             document.getElementById('modal').style.display = 'flex';
         }
     </script>
