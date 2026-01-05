@@ -3,82 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v42 - EMO-STATUS</title>
+    <title>BONSAI HD PIXEL v43 - LIVE & STAKE</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
             margin: 0; padding: 0; overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
         }
         
-        /* ログイン画面 */
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 500; transition: opacity 0.3s;
+            z-index: 500; transition: 0.3s;
         }
 
-        /* ゲーム画面 */
         #game-screen { 
             flex: 1; padding: 15px; display: flex; flex-direction: column; 
-            align-items: center; justify-content: space-around; 
-            box-sizing: border-box; visibility: hidden; opacity: 0; transition: opacity 0.4s;
+            align-items: center; justify-content: space-around; visibility: hidden; opacity: 0; transition: 0.4s;
         }
         #game-screen.active { visibility: visible; opacity: 1; }
 
         .val { font-size: 28px; color: #4caf50; font-weight: bold; }
 
-        /* 盆栽コンテナ */
+        /* 盆栽ビューアー */
         #view { 
             width: min(300px, 80vw); height: min(300px, 80vw); 
             background: #000; border-radius: 40px; border: 4px solid #222; 
-            position: relative; overflow: hidden; 
-            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+
+        /* --- 揺れるアニメーション --- */
+        #bonsai-img-container { 
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            animation: breathe 4s ease-in-out infinite; /* 呼吸のような揺れ */
+        }
+        #bonsai-img-container img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
         
-        /* 水滴エフェクト */
+        /* タップした時のリアクション */
+        .jiggle { animation: jiggle 0.4s ease-out !important; }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02) translateY(-2px); }
+        }
+        @keyframes jiggle {
+            0% { transform: scale(1); }
+            30% { transform: scale(0.9) rotate(-2deg); }
+            60% { transform: scale(1.1) rotate(2deg); }
+            100% { transform: scale(1); }
+        }
+
+        /* その他UIは継承 */
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
-        .pixel-drop { 
-            position: absolute; width: 3px; height: 8px; background: #00e5ff; 
-            box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.5s linear infinite; 
-        }
-        @keyframes drop-fall { 
-            0% { transform: translateY(-10px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(300px); opacity: 0; }
-        }
+        .pixel-drop { position: absolute; width: 3px; height: 8px; background: #00e5ff; animation: drop-fall 0.5s linear infinite; }
+        @keyframes drop-fall { 0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(300px); opacity: 0; } }
         
-        /* 爆速生成オーバーレイ */
-        #loading-overlay { 
-            display: none; position: absolute; top:0; left:0; width:100%; height:100%; 
-            background: rgba(0,0,0,0.9); color: #4caf50; font-weight: bold; 
-            flex-direction: column; align-items: center; justify-content: center; z-index: 200; 
-        }
-        .progress-container { width: 60%; height: 4px; background: #222; border-radius: 2px; overflow: hidden; margin-top: 15px;}
+        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        .progress-container { width: 60%; height: 4px; background: #222; margin-top: 15px; overflow: hidden; }
         #p-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; }
 
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-bottom: env(safe-area-inset-bottom); }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; outline: none; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
         .btn:active { transform: translateY(2px); box-shadow: none; }
-        .btn:disabled { opacity: 0.2; pointer-events: none; }
+        .btn:disabled { opacity: 0.3; background: #333; box-shadow: none; cursor: not-allowed; }
 
-        /* 育成方針UI */
-        .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; margin-top: 5px; }
-        .style-label { font-size: 10px; color: #4caf50; margin-bottom: 5px; display: block; font-weight: bold; letter-spacing: 1px; }
-        .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; cursor: pointer; }
+        .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; }
+        .style-label { font-size: 10px; color: #4caf50; margin-bottom: 5px; display: block; font-weight: bold; }
+        .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; }
         
-        #health-msg { font-size: 14px; color: #888; font-style: italic; min-height: 1.5em; }
-        .btn-reset { background: transparent; color: #333; font-size: 11px; border: none; text-decoration: underline; margin-top: 5px; cursor: pointer; }
+        #health-msg { font-size: 13px; color: #888; font-style: italic; min-height: 1.5em; }
+        .btn-reset { background: transparent; color: #222; font-size: 10px; border: none; text-decoration: underline; }
         .hidden { display: none !important; }
+
+        /* ステーキング・ポップアップ */
+        #bank-modal { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); z-index: 600; display: none; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body>
 
+    <div id="bank-modal">
+        <div style="background:#111; padding:30px; border-radius:30px; border:1px solid #4caf50; width:80%; max-width:280px;">
+            <div style="font-size:12px; color:#4caf50; letter-spacing:2px;">BONSAI BANK REPORT</div>
+            <h2 style="margin:20px 0 10px 0;">GP <span id="bank-profit" style="color:#4caf50;">0</span></h2>
+            <p style="font-size:12px; color:#888; line-height:1.6;">不在の間に盆栽が成長し、<br>利息が発生しました。</p>
+            <button class="btn btn-w" style="width:100%; margin-top:20px;" onclick="closeBank()">受け取る</button>
+        </div>
+    </div>
+
     <div id="login-screen">
         <div style="font-size: 42px; font-weight: bold; color: #4caf50; letter-spacing: 4px;">BONSAI</div>
-        <div style="font-size: 12px; color: #444; margin-bottom: 30px;">HD PIXEL PROJECT</div>
+        <div style="font-size: 12px; color: #444; margin-bottom: 30px;">STAKING & GROWTH</div>
         <button class="btn btn-w" style="width: 200px;" onclick="enterGame()">ENTER</button>
     </div>
 
@@ -87,37 +106,37 @@
             <div>GP <span id="ui-gp" class="val">0</span></div>
         </div>
 
-        <div id="view" onclick="showModal()">
+        <div id="view" onclick="tapBonsai()">
             <div id="water-layer"></div>
             <div id="loading-overlay">
-                <div id="loading-txt" style="letter-spacing: 2px;">GENERATING...</div>
+                <div id="loading-txt">GENERATING...</div>
                 <div class="progress-container"><div id="p-bar"></div></div>
             </div>
-            <div id="bonsai-img-container"><div style="font-size:50px; opacity:0.1;">🪴</div></div>
+            <div id="bonsai-img-container">
+                <img id="main-img" src="" style="display:none;">
+                <div id="placeholder" style="font-size:50px; opacity:0.1;">🪴</div>
+            </div>
         </div>
         
         <div id="health-msg"></div>
 
         <div class="controls">
             <div id="setup-area">
-                <div class="style-box">
-                    <span class="style-label">CHOOSE SPECIES / 樹種選択</span>
-                    <select id="species-select" class="dropdown">
-                        <option value="Black Pine">黒松 (Black Pine)</option>
-                        <option value="Maple">楓 (Maple)</option>
-                        <option value="Cherry Blossom">桜 (Sakura)</option>
-                        <option value="Juniper">真柏 (Juniper)</option>
-                    </select>
-                </div>
-                <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">START GROWTH</button>
+                <select id="species-select" class="dropdown style-box">
+                    <option value="Black Pine">黒松 (Black Pine)</option>
+                    <option value="Maple">楓 (Maple)</option>
+                    <option value="Cherry Blossom">桜 (Sakura)</option>
+                    <option value="Juniper">真柏 (Juniper)</option>
+                </select>
+                <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">育成を開始する</button>
             </div>
 
             <div id="main-controls" class="hidden">
-                <button class="btn btn-w" style="width:100%;" onclick="doW()">💧 WATERING</button>
-                <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ GROWTH</button>
+                <button id="w-btn" class="btn btn-w" style="width:100%;" onclick="doW()">💧 水やり (1日1回)</button>
+                <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ 成長を促す (50GP)</button>
                 
-                <div class="style-box">
-                    <span class="style-label">TARGET POLICY / 育成目標</span>
+                <div class="style-box" style="margin-top:8px;">
+                    <span class="style-label">TARGET POLICY</span>
                     <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();update();">
                         <option value="chokkan">直幹 (Straight)</option>
                         <option value="shakan">斜幹 (Slanted)</option>
@@ -125,101 +144,72 @@
                     </select>
                 </div>
             </div>
-            <button class="btn btn-reset" onclick="resetGame()">RESET DATA</button>
-        </div>
-    </div>
-
-    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; align-items:center; justify-content:center;" onclick="this.style.display='none'">
-        <div style="background:#111; padding:25px; border-radius:30px; width:85%; max-width:300px; text-align:left; border:1px solid #333; box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);" onclick="event.stopPropagation()">
-            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:15px;">
-                <div>
-                    <h3 id="m-species" style="color:#fff; margin:0; font-size:22px; letter-spacing:1px;"></h3>
-                    <span id="m-policy" style="color:#4caf50; font-size:11px; font-weight:bold; border:1px solid #4caf50; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:5px;"></span>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:10px; color:#666;">EST. AGE</div>
-                    <div id="m-age" style="color:#fff; font-size:18px; font-weight:bold;"></div>
-                </div>
-            </div>
-
-            <div style="background:#1a1a1a; padding:15px; border-radius:15px; margin-bottom:15px;">
-                <div style="font-size:11px; color:#888; margin-bottom:8px; border-bottom:1px solid #333; padding-bottom:4px;">STATUS / 盆栽の様子</div>
-                <div id="m-status-desc" style="color:#ddd; font-size:13px; line-height:1.6; min-height:60px;"></div>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div style="background:#1a1a1a; padding:10px; border-radius:10px;">
-                    <div style="font-size:9px; color:#666;">BOND / 絆</div>
-                    <div id="m-bond-lv" style="color:#4caf50; font-size:14px; font-weight:bold;"></div>
-                </div>
-                <div style="background:#1a1a1a; padding:10px; border-radius:10px;">
-                    <div style="font-size:9px; color:#666;">VITAL / 樹勢</div>
-                    <div id="m-vital" style="color:#ff9800; font-size:14px; font-weight:bold;">良好</div>
-                </div>
-            </div>
-            
-            <button class="btn btn-w" style="margin-top:20px; width:100%; height:50px;">閉じる</button>
+            <button class="btn btn-reset" onclick="resetGame()">データをリセット</button>
         </div>
     </div>
 
     <script>
-        let gp=0, love=0, age=0.1, img="", last=Date.now(), targetStyle="chokkan", species="Black Pine", seed=0, isFixed=false;
+        let gp=0, love=0, age=0.1, img="", lastW=0, lastBank=Date.now(), targetStyle="chokkan", species="Black Pine", seed=0, isFixed=false;
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v42');
+            const s = localStorage.getItem('bonsai_v43');
             if(s) {
                 const d = JSON.parse(s);
-                gp=d.gp; love=d.love||0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
+                gp=d.gp; love=d.love||0; age=d.age; img=d.img; 
+                lastW=d.lastW||0; lastBank=d.lastBank||Date.now();
+                targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
+                
+                calcBankProfit(); // 放置利息の計算
                 if(isFixed) showMainUI();
                 update();
             }
         };
 
-        function enterGame() {
-            const login = document.getElementById('login-screen');
-            const game = document.getElementById('game-screen');
-            login.style.opacity = '0';
-            setTimeout(() => {
-                login.style.display = 'none';
-                game.classList.add('active');
-            }, 300);
-        }
-
-        function resetGame() {
-            if(confirm("データを全て消去し、最初からやり直しますか？")) { 
-                localStorage.removeItem('bonsai_v42'); 
-                location.reload(); 
+        // ステーキング利息計算（秒間0.01GPとする例）
+        function calcBankProfit() {
+            const now = Date.now();
+            const diffSec = Math.floor((now - lastBank) / 1000);
+            if (diffSec > 60 && isFixed) { // 1分以上放置してたら利息発生
+                const profit = Math.floor(diffSec * 0.01); 
+                if (profit > 0) {
+                    document.getElementById('bank-profit').innerText = profit;
+                    document.getElementById('bank-modal').style.display = 'flex';
+                    gp += profit;
+                }
             }
+            lastBank = now;
+            save();
         }
 
-        function showMainUI() {
-            document.getElementById('setup-area').classList.add('hidden');
-            document.getElementById('main-controls').classList.remove('hidden');
-            document.getElementById('style-select').value = targetStyle;
+        function closeBank() { document.getElementById('bank-modal').style.display = 'none'; update(); }
+
+        function enterGame() {
+            document.getElementById('login-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('login-screen').style.display = 'none'; document.getElementById('game-screen').classList.add('active'); }, 300);
+        }
+
+        // 盆栽をタップした時の揺れ
+        function tapBonsai() {
+            const container = document.getElementById('bonsai-img-container');
+            container.classList.remove('jiggle');
+            void container.offsetWidth; // リフロー強制
+            container.classList.add('jiggle');
         }
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; 
-            showMainUI(); 
-            await generateBonsai();
+            isFixed = true; showMainUI(); await generateBonsai();
         }
 
         async function generateBonsai() {
             const overlay = document.getElementById('loading-overlay');
             const pBar = document.getElementById('p-bar');
             overlay.style.display = 'flex';
-            
             let progress = 0;
-            const pInterval = setInterval(() => {
-                progress += (98 - progress) * 0.2;
-                pBar.style.width = progress + '%';
-            }, 100);
+            const pInterval = setInterval(() => { progress += (98 - progress) * 0.2; pBar.style.width = progress + '%'; }, 100);
 
-            let plantType = age < 1.0 ? "tiny_seedling" : (age < 3.0 ? "young_sapling" : "bonsai_tree");
-            let mood = love > 100 ? "shimmering_vibrant_aura" : "natural_pixels";
-            const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${plantType},in_a_ceramic_bonsai_pot,grounded,${species},${targetStyle}_style,${mood},growth_stage_${age.toFixed(1)},masterpiece,white_background`);
+            const prompt = encodeURIComponent(`hd_pixel_art,${species},${targetStyle}_style,growth_stage_${age.toFixed(1)},masterpiece,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
 
             const temp = new Image();
@@ -229,7 +219,9 @@
                 pBar.style.width = '100%';
                 setTimeout(() => {
                     img = url;
-                    document.getElementById('bonsai-img-container').innerHTML = `<img src="${url}">`;
+                    const el = document.getElementById('main-img');
+                    el.src = url; el.style.display = 'block';
+                    document.getElementById('placeholder').style.display = 'none';
                     overlay.style.display = 'none';
                     save(); update();
                 }, 150);
@@ -237,6 +229,10 @@
         }
 
         function doW() {
+            const now = Date.now();
+            // 24時間チェック (86400000 ms)
+            if (now - lastW < 86400000) return;
+
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block'; layer.innerHTML = '';
             for(let i=0; i<30; i++) {
@@ -246,61 +242,49 @@
             }
             setTimeout(() => {
                 layer.style.display = 'none';
-                gp += 10; love += 5; last = Date.now();
+                gp += 10; love += 5; lastW = Date.now();
                 save(); update();
             }, 800);
         }
 
         async function doG() {
             if(gp < COST) return;
-            gp -= COST; age += 0.1; 
-            await generateBonsai();
+            gp -= COST; age += 0.1; await generateBonsai();
         }
 
         function save() {
-            localStorage.setItem('bonsai_v42', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
+            localStorage.setItem('bonsai_v43', JSON.stringify({ gp, love, age, img, lastW, lastBank, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('gb').disabled = (gp < COST);
-            if(img) document.getElementById('bonsai-img-container').innerHTML = `<img src="${img}">`;
             
-            const msg = document.getElementById('health-msg');
-            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex]?.text || "直幹";
-            if(!isFixed) msg.innerText = "CHOOSE YOUR BONSAI";
-            else msg.innerText = `現在は「${styleName}」を目指して育成中。`;
-        }
-
-        function showModal() {
-            if(!isFixed) return;
-            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
-            
-            document.getElementById('m-species').innerText = species.toUpperCase();
-            document.getElementById('m-age').innerText = age.toFixed(1) + " yrs";
-            document.getElementById('m-policy').innerText = styleName;
-
-            let statusText = "";
-            let bondLv = "";
-
-            if (love > 200) {
-                bondLv = "皆伝 (Master)";
-                statusText = `主の心を知り尽くしたような、威厳ある姿です。${styleName}の形に沿って、一葉一葉が完璧な調和を保っています。`;
-            } else if (love > 100) {
-                bondLv = "親密 (Close)";
-                statusText = `手入れの跡が美しく馴染み、樹勢は最高潮です。${styleName}を目指す力強い生命力を感じさせ、見る者に安らぎを与えます。`;
-            } else if (love > 50) {
-                bondLv = "信頼 (Trust)";
-                statusText = `この環境に慣れ、根がしっかりと張っています。${styleName}としての個性が少しずつ芽生え始めています。`;
+            // 水やりボタンの24時間制限
+            const now = Date.now();
+            const wBtn = document.getElementById('w-btn');
+            if (now - lastW < 86400000) {
+                const next = new Date(lastW + 86400000);
+                wBtn.disabled = true;
+                wBtn.innerText = `待機中 (${next.getHours()}:${next.getMinutes()}〜)`;
             } else {
-                bondLv = "知己 (Aware)";
-                statusText = `まだ若々しく、これからの導きを待っている状態です。静かに、しかし確実にあなたの世話に応えようとしています。`;
+                wBtn.disabled = false;
+                wBtn.innerText = "💧 水やり (1日1回)";
             }
 
-            document.getElementById('m-status-desc').innerText = statusText;
-            document.getElementById('m-bond-lv').innerText = bondLv;
-            document.getElementById('modal').style.display = 'flex';
+            if(img) {
+                const el = document.getElementById('main-img');
+                el.src = img; el.style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
+            }
         }
+
+        function showMainUI() {
+            document.getElementById('setup-area').classList.add('hidden');
+            document.getElementById('main-controls').classList.remove('hidden');
+        }
+
+        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v43'); location.reload(); } }
     </script>
 </body>
 </html>
