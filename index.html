@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v39 - BUG FIX & SPEED</title>
+    <title>BONSAI HD PIXEL v40 - LOGIN FIXED</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -13,30 +13,28 @@
         #login-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 500; transition: 0.4s;
+            z-index: 500; transition: opacity 0.3s;
         }
 
         #game-screen { 
             flex: 1; padding: 15px; display: flex; flex-direction: column; 
             align-items: center; justify-content: space-around; 
-            box-sizing: border-box; visibility: hidden; opacity: 0; transition: 0.4s;
+            box-sizing: border-box; visibility: hidden; opacity: 0; transition: opacity 0.4s;
         }
         #game-screen.active { visibility: visible; opacity: 1; }
 
         .val { font-size: 28px; color: #4caf50; font-weight: bold; }
 
-        /* --- 盆栽コンテナ（防水工事済み） --- */
         #view { 
             width: min(300px, 80vw); height: min(300px, 80vw); 
             background: #000; border-radius: 40px; border: 4px solid #222; 
-            position: relative; overflow: hidden; /* これではみ出しをカット */
+            position: relative; overflow: hidden; 
             display: flex; align-items: center; justify-content: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #view img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
         
-        /* --- 水滴エフェクト（修正版） --- */
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
         .pixel-drop { 
             position: absolute; width: 3px; height: 8px; background: #00e5ff; 
@@ -46,20 +44,19 @@
             0% { transform: translateY(-10px); opacity: 0; } 
             20% { opacity: 1; }
             90% { opacity: 1; }
-            100% { transform: translateY(300px); opacity: 0; } /* コンテナの底で消える */
+            100% { transform: translateY(300px); opacity: 0; }
         }
         
-        /* --- 爆速ローディング --- */
         #loading-overlay { 
             display: none; position: absolute; top:0; left:0; width:100%; height:100%; 
             background: rgba(0,0,0,0.9); color: #4caf50; font-weight: bold; 
             flex-direction: column; align-items: center; justify-content: center; z-index: 200; 
         }
         .progress-container { width: 60%; height: 4px; background: #222; border-radius: 2px; overflow: hidden; margin-top: 15px;}
-        #p-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; } /* transitionを速く */
+        #p-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; }
 
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-bottom: env(safe-area-inset-bottom); }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; outline: none; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
         .btn:active { transform: translateY(2px); box-shadow: none; }
@@ -132,7 +129,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v39');
+            const s = localStorage.getItem('bonsai_v40');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -142,15 +139,17 @@
         };
 
         function enterGame() {
-            document.getElementById('login-screen').style.opacity = '0';
+            const login = document.getElementById('login-screen');
+            const game = document.getElementById('game-screen');
+            login.style.opacity = '0';
             setTimeout(() => {
-                document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('game-screen').classList.add('active');
-            }, 400);
+                login.style.display = 'none';
+                game.classList.add('active');
+            }, 300);
         }
 
         function resetGame() {
-            if(confirm("RESET?")) { localStorage.removeItem('bonsai_v39'); location.reload(); }
+            if(confirm("RESET?")) { localStorage.removeItem('bonsai_v40'); location.reload(); }
         }
 
         function showMainUI() {
@@ -160,7 +159,9 @@
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; showMainUI(); await generateBonsai();
+            isFixed = true; 
+            showMainUI(); 
+            await generateBonsai();
         }
 
         async function generateBonsai() {
@@ -170,7 +171,7 @@
             
             let progress = 0;
             const pInterval = setInterval(() => {
-                progress += (98 - progress) * 0.2; // 以前より速く進む
+                progress += (98 - progress) * 0.2;
                 pBar.style.width = progress + '%';
             }, 100);
 
@@ -183,13 +184,14 @@
             temp.src = url;
             temp.onload = () => {
                 clearInterval(pInterval);
-                pBar.style.width = '100%'; // 読み込めたら即100%
+                pBar.style.width = '100%';
                 setTimeout(() => {
                     img = url;
                     document.getElementById('bonsai-img-container').innerHTML = `<img src="${url}">`;
                     overlay.style.display = 'none';
-                    save(); update();
-                }, 150; // 待ち時間を最小限に
+                    save(); 
+                    update();
+                }, 150);
             };
         }
 
@@ -207,16 +209,17 @@
                 layer.style.display = 'none';
                 gp += 10; love += 5; last = Date.now();
                 save(); update();
-            }, 800); // 水やり時間も少し短縮してテンポアップ
+            }, 800);
         }
 
         async function doG() {
             if(gp < COST) return;
-            gp -= COST; age += 0.1; await generateBonsai();
+            gp -= COST; age += 0.1; 
+            await generateBonsai();
         }
 
         function save() {
-            localStorage.setItem('bonsai_v39', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
+            localStorage.setItem('bonsai_v40', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
