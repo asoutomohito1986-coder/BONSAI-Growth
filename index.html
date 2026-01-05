@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v40 - LOGIN FIXED</title>
+    <title>BONSAI HD PIXEL v41 - GROWTH POLICY</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -41,10 +41,7 @@
             box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.5s linear infinite; 
         }
         @keyframes drop-fall { 
-            0% { transform: translateY(-10px); opacity: 0; } 
-            20% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(300px); opacity: 0; }
+            0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(300px); opacity: 0; }
         }
         
         #loading-overlay { 
@@ -56,13 +53,16 @@
         #p-bar { width: 0%; height: 100%; background: #4caf50; transition: width 0.1s; }
 
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-bottom: env(safe-area-inset-bottom); }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; outline: none; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
         .btn:active { transform: translateY(2px); box-shadow: none; }
-        .btn:disabled { opacity: 0.2; pointer-events: none; }
 
-        .dropdown { background: #1a1a1a; color: #fff; border: 2px solid #333; padding: 12px; border-radius: 12px; width: 100%; font-size: 15px; appearance: none; text-align: center; }
+        /* スタイル選択エリアの装飾 */
+        .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; margin-top: 5px; }
+        .style-label { font-size: 10px; color: #4caf50; margin-bottom: 5px; display: block; font-weight: bold; }
+        .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; }
+        
         #health-msg { font-size: 14px; color: #888; font-style: italic; min-height: 1.5em; }
         .btn-reset { background: transparent; color: #333; font-size: 11px; border: none; text-decoration: underline; margin-top: 5px; }
         .hidden { display: none !important; }
@@ -94,7 +94,7 @@
 
         <div class="controls">
             <div id="setup-area">
-                <select id="species-select" class="dropdown">
+                <select id="species-select" class="dropdown style-box">
                     <option value="Black Pine">黒松 (Black Pine)</option>
                     <option value="Maple">楓 (Maple)</option>
                     <option value="Cherry Blossom">桜 (Sakura)</option>
@@ -106,11 +106,15 @@
             <div id="main-controls" class="hidden">
                 <button class="btn btn-w" style="width:100%;" onclick="doW()">💧 WATERING</button>
                 <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ GROWTH</button>
-                <select id="style-select" class="dropdown" style="margin-top:8px;" onchange="targetStyle=this.value;save();">
-                    <option value="chokkan">直幹 (Straight)</option>
-                    <option value="shakan">斜幹 (Slanted)</option>
-                    <option value="moyogi">模様木 (Curved)</option>
-                </select>
+                
+                <div class="style-box">
+                    <span class="style-label">TARGET POLICY / 育成目標</span>
+                    <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();update();">
+                        <option value="chokkan">直幹 (Straight)</option>
+                        <option value="shakan">斜幹 (Slanted)</option>
+                        <option value="moyogi">模様木 (Curved)</option>
+                    </select>
+                </div>
             </div>
             <button class="btn btn-reset" onclick="resetGame()">RESET DATA</button>
         </div>
@@ -120,7 +124,8 @@
         <div style="background:#111; padding:30px; border-radius:20px; width:80%; max-width:280px; text-align:left; border-left:4px solid #4caf50;" onclick="event.stopPropagation()">
             <h3 id="m-species" style="color:#fff; margin:0 0 10px 0;"></h3>
             <p id="m-age" style="color:#888; font-size:14px;"></p>
-            <div id="m-status" style="margin-top:15px; color:#4caf50; font-size:13px; border-top:1px solid #222; padding-top:10px;"></div>
+            <p id="m-policy" style="color:#4caf50; font-size:12px; margin:5px 0; font-weight:bold;"></p>
+            <div id="m-status" style="margin-top:15px; color:#aaa; font-size:13px; border-top:1px solid #222; padding-top:10px;"></div>
         </div>
     </div>
 
@@ -129,7 +134,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v40');
+            const s = localStorage.getItem('bonsai_v41');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; last=d.last; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -139,36 +144,32 @@
         };
 
         function enterGame() {
-            const login = document.getElementById('login-screen');
-            const game = document.getElementById('game-screen');
-            login.style.opacity = '0';
+            document.getElementById('login-screen').style.opacity = '0';
             setTimeout(() => {
-                login.style.display = 'none';
-                game.classList.add('active');
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('game-screen').classList.add('active');
             }, 300);
         }
 
         function resetGame() {
-            if(confirm("RESET?")) { localStorage.removeItem('bonsai_v40'); location.reload(); }
+            if(confirm("RESET?")) { localStorage.removeItem('bonsai_v41'); location.reload(); }
         }
 
         function showMainUI() {
             document.getElementById('setup-area').classList.add('hidden');
             document.getElementById('main-controls').classList.remove('hidden');
+            document.getElementById('style-select').value = targetStyle;
         }
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; 
-            showMainUI(); 
-            await generateBonsai();
+            isFixed = true; showMainUI(); await generateBonsai();
         }
 
         async function generateBonsai() {
             const overlay = document.getElementById('loading-overlay');
             const pBar = document.getElementById('p-bar');
             overlay.style.display = 'flex';
-            
             let progress = 0;
             const pInterval = setInterval(() => {
                 progress += (98 - progress) * 0.2;
@@ -189,20 +190,17 @@
                     img = url;
                     document.getElementById('bonsai-img-container').innerHTML = `<img src="${url}">`;
                     overlay.style.display = 'none';
-                    save(); 
-                    update();
+                    save(); update();
                 }, 150);
             };
         }
 
         function doW() {
             const layer = document.getElementById('water-layer');
-            layer.style.display = 'block';
-            layer.innerHTML = '';
+            layer.style.display = 'block'; layer.innerHTML = '';
             for(let i=0; i<30; i++) {
                 let d = document.createElement('div'); d.className = 'pixel-drop';
-                d.style.left = Math.random() * 100 + '%';
-                d.style.animationDelay = Math.random() * 0.4 + 's';
+                d.style.left = Math.random() * 100 + '%'; d.style.animationDelay = Math.random() * 0.4 + 's';
                 layer.appendChild(d);
             }
             setTimeout(() => {
@@ -214,12 +212,11 @@
 
         async function doG() {
             if(gp < COST) return;
-            gp -= COST; age += 0.1; 
-            await generateBonsai();
+            gp -= COST; age += 0.1; await generateBonsai();
         }
 
         function save() {
-            localStorage.setItem('bonsai_v40', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
+            localStorage.setItem('bonsai_v41', JSON.stringify({ gp, love, age, img, last, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
@@ -228,16 +225,18 @@
             if(img) document.getElementById('bonsai-img-container').innerHTML = `<img src="${img}">`;
             
             const msg = document.getElementById('health-msg');
+            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex]?.text || "直幹";
             if(!isFixed) msg.innerText = "CHOOSE YOUR BONSAI";
-            else if(love > 100) msg.innerText = "絆を感じます。";
-            else msg.innerText = "静かに息づいています。";
+            else msg.innerText = `現在は「${styleName}」を目指して育成中。`;
         }
 
         function showModal() {
             if(!isFixed) return;
+            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
             document.getElementById('m-species').innerText = species.toUpperCase();
             document.getElementById('m-age').innerText = "AGE: " + age.toFixed(1);
-            document.getElementById('m-status').innerText = (love > 100) ? "非常に大切にされています。" : "これからの成長が楽しみです。";
+            document.getElementById('m-policy').innerText = "POLICY: " + styleName;
+            document.getElementById('m-status').innerText = (love > 100) ? "あなたとの強い絆が、枝ぶりに現れています。" : "今後の成長が楽しみな一鉢です。";
             document.getElementById('modal').style.display = 'flex';
         }
     </script>
