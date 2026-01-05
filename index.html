@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v45 - STABLE</title>
+    <title>BONSAI HD PIXEL v46 - STABLE & POT</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -33,19 +33,30 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: pointer;
         }
         
+        /* 揺れのアニメーションを削除し、固定表示 */
         #bonsai-img-container { 
             width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-            animation: breathe 4s ease-in-out infinite;
         }
-        #bonsai-img-container img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
-        .jiggle { animation: jiggle 0.4s ease-out !important; }
+        #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; } /* object-fit: contain で全体を表示 */
 
-        @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02) translateY(-2px); } }
-        @keyframes jiggle { 0% { transform: scale(1); } 30% { transform: scale(0.95) rotate(-2deg); } 60% { transform: scale(1.05) rotate(2deg); } 100% { transform: scale(1); } }
-
-        #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
-        .pixel-drop { position: absolute; width: 3px; height: 8px; background: #00e5ff; animation: drop-fall 0.5s linear infinite; }
-        @keyframes drop-fall { 0% { transform: translateY(-10px); opacity: 0; } 100% { transform: translateY(300px); opacity: 0; } }
+        /* 水エフェクトの修正 */
+        #water-layer { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            pointer-events: none; z-index: 100; display: none; 
+            overflow: hidden; /* 水滴がコンテナの外に出ないように */
+        }
+        .pixel-drop { 
+            position: absolute; width: 3px; height: 8px; background: #00e5ff; 
+            box-shadow: 0 0 4px #00e5ff; 
+            animation: drop-fall 0.8s linear forwards; /* アニメーション終了時に停止 */
+            opacity: 0; /* 初期非表示 */
+        }
+        @keyframes drop-fall { 
+            0% { transform: translateY(-10px); opacity: 0; } 
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(calc(min(300px, 80vw) - 10px)); opacity: 0; } /* 盆栽コンテナの高さに合わせて調整 */
+        }
         
         #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
         .progress-container { width: 60%; height: 4px; background: #222; margin-top: 15px; overflow: hidden; }
@@ -140,7 +151,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v45');
+            const s = localStorage.getItem('bonsai_v46'); // バージョンを v46 に更新
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -159,12 +170,7 @@
 
         function showModal() {
             if(!isFixed) return;
-            // 揺れ演出
-            const container = document.getElementById('bonsai-img-container');
-            container.classList.remove('jiggle');
-            void container.offsetWidth;
-            container.classList.add('jiggle');
-
+            
             // ポップアップ内容
             const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
             document.getElementById('m-species').innerText = species.toUpperCase();
@@ -191,8 +197,11 @@
             overlay.style.display = 'flex';
             let progress = 0;
             const pInterval = setInterval(() => { progress += (98 - progress) * 0.2; pBar.style.width = progress + '%'; }, 100);
-            const prompt = encodeURIComponent(`hd_pixel_art,${species},${targetStyle}_style,growth_stage_${age.toFixed(1)},masterpiece,white_background`);
+
+            // プロンプトに鉢（ceramic_bonsai_pot）を追加し、より強調
+            const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species},in_a_ceramic_bonsai_pot,grounded,full_bonsai_view,${targetStyle}_style,growth_stage_${age.toFixed(1)},masterpiece,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
+
             const temp = new Image();
             temp.src = url;
             temp.onload = () => {
@@ -211,10 +220,14 @@
 
         function doW() {
             const layer = document.getElementById('water-layer');
-            layer.style.display = 'block'; layer.innerHTML = '';
+            layer.style.display = 'block'; 
+            layer.innerHTML = ''; // 古い水滴をクリア
+
             for(let i=0; i<30; i++) {
                 let d = document.createElement('div'); d.className = 'pixel-drop';
-                d.style.left = Math.random() * 100 + '%'; d.style.animationDelay = Math.random() * 0.4 + 's';
+                // 水滴の初期位置を盆栽のコンテナ上部に限定
+                d.style.left = (Math.random() * 80 + 10) + '%'; // 左右中央80%の範囲
+                d.style.animationDelay = Math.random() * 0.4 + 's';
                 layer.appendChild(d);
             }
             setTimeout(() => {
@@ -230,7 +243,7 @@
         }
 
         function save() {
-            localStorage.setItem('bonsai_v45', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed }));
+            localStorage.setItem('bonsai_v46', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed }));
         }
 
         function update() {
@@ -252,7 +265,7 @@
             if (isFixed) document.getElementById('style-select').value = targetStyle;
         }
 
-        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v45'); location.reload(); } }
+        function resetGame() { if(confirm("データを全て消去し、最初からやり直しますか？")) { localStorage.removeItem('bonsai_v46'); location.reload(); } }
     </script>
 </body>
 </html>
