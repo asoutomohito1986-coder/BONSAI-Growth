@@ -3,66 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v59 - ULTIMATE FIX</title>
+    <title>BONSAI HD PIXEL v60 - 10 STAGES GROWTH</title>
     <style>
         :root { --main-green: #4caf50; --water-blue: #00e5ff; }
         body { text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
-        
-        /* Screens */
         #login-screen { position: fixed; inset: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         #game-screen { flex: 1; padding: 15px; display: none; flex-direction: column; align-items: center; justify-content: space-around; }
         #game-screen.active { display: flex; }
-
-        /* Viewport */
-        #view { 
-            width: min(300px, 80vw); height: min(300px, 80vw); 
-            background: #000; border-radius: 40px; border: 4px solid #222; 
-            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; 
-        }
-        
-        /* Layers */
+        .val { font-size: 28px; color: var(--main-green); font-weight: bold; }
+        #view { width: min(300px, 80vw); height: min(300px, 80vw); background: #000; border-radius: 40px; border: 4px solid #222; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         #bonsai-img-container { width: 100%; height: 100%; z-index: 10; display: flex; align-items: center; justify-content: center; }
         #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-        
         #water-layer { position: absolute; inset: 0; pointer-events: none; z-index: 1000; display: none; }
         .pixel-drop { position: absolute; width: 4px; height: 12px; background: var(--water-blue); box-shadow: 0 0 6px var(--water-blue); animation: drop-fall 0.6s linear forwards; }
-        @keyframes drop-fall { 0% { transform: translateY(-20px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(320px); opacity: 0; } }
-
-        /* UI Overlays */
+        @keyframes drop-fall { 0% { transform: translateY(-20px); opacity: 0; } 100% { transform: translateY(320px); opacity: 0; } }
         #watering-ui { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; flex-direction: column; align-items: center; z-index: 1100; }
         .progress-ring { transform: rotate(-90deg); }
         .progress-ring__circle { stroke: var(--water-blue); stroke-width: 5; fill: transparent; stroke-dasharray: 226; stroke-dashoffset: 226; transition: stroke-dashoffset 0.1s; }
         .water-drop-btn { position: absolute; top: 40px; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0, 229, 255, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: 2px solid var(--water-blue); }
-        
         .bonus-ready { animation: bonus-glow 0.5s infinite alternate; border-color: #fff !important; }
-        @keyframes bonus-glow { 0% { background: rgba(255,255,255,0.2); transform: translate(-50%, -50%) scale(1); } 100% { background: rgba(255,215,0,0.5); transform: translate(-50%, -50%) scale(1.1); } }
-
-        #loading-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.8); z-index: 1500; align-items: center; justify-content: center; font-weight: bold; }
-
-        /* Controls */
+        @keyframes bonus-glow { 0% { transform: translate(-50%, -50%) scale(1); } 100% { transform: translate(-50%, -50%) scale(1.1); background: rgba(255,215,0,0.5); } }
+        #loading-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 1500; align-items: center; justify-content: center; font-weight: bold; }
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
         .btn:active { transform: translateY(2px); box-shadow: none; }
-        .btn:disabled { opacity: 0.5; filter: grayscale(1); }
-        
+        .btn:disabled { opacity: 0.5; }
         .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; }
         .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; }
-        
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <h1 style="color: var(--main-green); letter-spacing: 5px;">BONSAI</h1>
+        <h1 style="color: var(--main-green); letter-spacing: 5px;">BONSAI v60</h1>
         <button class="btn btn-w" style="width: 200px;" onclick="enterGame()">ENTER</button>
     </div>
 
     <div id="game-screen">
         <div style="font-size: 20px;">GP: <span id="ui-gp" class="val">0</span></div>
-        
         <div id="view">
             <div id="water-layer"></div>
             <div id="watering-ui">
@@ -77,15 +58,12 @@
                 <div id="placeholder" style="font-size:50px; opacity:0.1;">🪴</div>
             </div>
         </div>
-
         <div id="health-msg" style="color:#888; font-size:12px; height:15px;">樹の呼吸に耳を傾ける。</div>
-
         <div class="controls">
             <div id="setup-area">
                 <div class="style-box"><select id="species-select" class="dropdown"><option value="Black Pine">黒松</option><option value="Maple">楓</option><option value="Cherry Blossom">桜</option><option value="Juniper">真柏</option></select></div>
                 <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">START GROWTH</button>
             </div>
-            
             <div id="main-controls" class="hidden">
                 <button id="main-w-btn" class="btn btn-w" style="width:100%;" onclick="startWateringMode()">💧 WATERING</button>
                 <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ GROWTH (50GP)</button>
@@ -118,7 +96,7 @@
         const WATER_MAX = 10, COST = 50;
 
         window.onload = () => {
-            const saved = localStorage.getItem('bonsai_v59');
+            const saved = localStorage.getItem('bonsai_v60');
             if(saved) {
                 const d = JSON.parse(saved);
                 gp=d.gp||0; love=d.love||0; age=d.age||1; img=d.img||""; targetStyle=d.target||"chokkan"; 
@@ -127,12 +105,7 @@
             }
         };
 
-        function enterGame() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('game-screen').classList.add('active');
-            if(isFixed) showMainUI();
-        }
-
+        function enterGame() { document.getElementById('login-screen').style.display = 'none'; document.getElementById('game-screen').classList.add('active'); if(isFixed) showMainUI(); }
         function updateUI() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('gb').disabled = (gp < COST);
@@ -142,43 +115,19 @@
                 document.getElementById('placeholder').style.display = 'none';
             }
         }
-
-        function showMainUI() {
-            document.getElementById('setup-area').classList.add('hidden');
-            document.getElementById('main-controls').classList.remove('hidden');
-        }
-
-        // --- Watering Logic ---
-        function startWateringMode() {
-            document.getElementById('main-w-btn').disabled = true;
-            document.getElementById('watering-ui').style.display = 'flex';
-            document.getElementById('drop-btn').classList.remove('bonus-ready');
-            waterCount = 0;
-            updateWaterProgress();
-        }
-
-        function updateWaterProgress() {
-            const offset = 226 - (waterCount / WATER_MAX * 226);
-            document.querySelector('.progress-ring__circle').style.strokeDashoffset = offset;
-        }
-
+        function showMainUI() { document.getElementById('setup-area').classList.add('hidden'); document.getElementById('main-controls').classList.remove('hidden'); }
+        function startWateringMode() { document.getElementById('main-w-btn').disabled = true; document.getElementById('watering-ui').style.display = 'flex'; document.getElementById('drop-btn').classList.remove('bonus-ready'); waterCount = 0; updateWaterProgress(); }
+        function updateWaterProgress() { const offset = 226 - (waterCount / WATER_MAX * 226); document.querySelector('.progress-ring__circle').style.strokeDashoffset = offset; }
+        
         function tapWatering() {
             if(waterCount >= WATER_MAX) return;
-            waterCount++;
-            updateWaterProgress();
-            
-            // 水滴エフェクト
-            const layer = document.getElementById('water-layer');
-            layer.style.display = 'block';
+            waterCount++; updateWaterProgress();
+            const layer = document.getElementById('water-layer'); layer.style.display = 'block';
             for(let i=0; i<4; i++) {
-                const d = document.createElement('div');
-                d.className = 'pixel-drop';
+                const d = document.createElement('div'); d.className = 'pixel-drop';
                 d.style.left = (Math.random() * 80 + 10) + '%';
-                d.style.animationDelay = (i * 0.05) + 's';
-                layer.appendChild(d);
-                setTimeout(() => d.remove(), 600);
+                layer.appendChild(d); setTimeout(() => d.remove(), 600);
             }
-
             if(waterCount >= WATER_MAX) setTimeout(finishWatering, 600);
         }
 
@@ -186,8 +135,7 @@
             gp += 10; love += 5;
             if(Math.random() < 0.2) {
                 document.getElementById('health-msg').innerText = "✨ BONUS: STILL THIRSTY! ✨";
-                document.getElementById('drop-btn').classList.add('bonus-ready');
-                waterCount = 0; updateWaterProgress();
+                document.getElementById('drop-btn').classList.add('bonus-ready'); waterCount = 0; updateWaterProgress();
             } else {
                 document.getElementById('watering-ui').style.display = 'none';
                 document.getElementById('main-w-btn').disabled = false;
@@ -196,49 +144,45 @@
             save(); updateUI();
         }
 
-        // --- Growth Logic ---
-        async function firstGrow() {
-            species = document.getElementById('species-select').value;
-            isFixed = true; age = 1; showMainUI(); await generate();
-        }
-
-        async function doG() {
-            if(gp < COST) return;
-            gp -= COST; age++; await generate();
-        }
+        async function firstGrow() { species = document.getElementById('species-select').value; isFixed = true; age = 1; showMainUI(); await generate(); }
+        async function doG() { if(gp < COST) return; gp -= COST; age++; await generate(); }
 
         async function generate() {
-            const loader = document.getElementById('loading-overlay');
-            loader.style.display = 'flex';
+            document.getElementById('loading-overlay').style.display = 'flex';
             
-            let kw = "";
-            if(age <= 2) kw = "ultra_minimalist_sapling,single_thin_stem,very_few_leaves,small_sprout";
-            else if(age <= 5) kw = "young_bonsai,growing_small_branches,thin_trunk";
-            else if(age <= 9) kw = "mature_bonsai,dense_foliage_clouds,thick_trunk";
-            else kw = "ancient_majestic_bonsai,huge_foliage,thick_gnarled_trunk";
-
+            // 10段階それぞれの詳細キーワード定義
+            const stages = [
+                "just_a_tiny_new_sprout_breaking_the_soil", // 1
+                "tiny_sapling_with_two_small_leaves_single_stem", // 2
+                "thin_sapling_with_three_or_four_leaves_minimal_form", // 3
+                "young_bonsai_starting_to_grow_a_tiny_branch", // 4
+                "young_bonsai_with_small_branch_structure", // 5
+                "small_maturing_bonsai_developing_foliage", // 6
+                "maturing_bonsai_with_visible_trunk_shape", // 7
+                "established_bonsai_with_thickening_trunk", // 8
+                "mature_elegant_bonsai_with_dense_foliage", // 9
+                "majestic_masterpiece_bonsai_ancient_thick_gnarled_trunk" // 10
+            ];
+            
+            const kw = stages[Math.min(age-1, 9)];
             const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species}_bonsai_tree,${kw},planted_in_a_ceramic_bonsai_pot,${targetStyle}_style,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
             
             const temp = new Image();
             temp.src = url;
-            temp.onload = () => {
-                img = url;
-                loader.style.display = 'none';
-                save(); updateUI();
-            };
+            temp.onload = () => { img = url; document.getElementById('loading-overlay').style.display = 'none'; save(); updateUI(); };
         }
 
-        function save() { localStorage.setItem('bonsai_v59', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v60', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
         function showModal() {
             if(document.getElementById('watering-ui').style.display === 'flex') return;
             document.getElementById('m-species').innerText = species;
             document.getElementById('m-age').innerText = age + "/10";
             document.getElementById('m-love').innerText = love;
-            document.getElementById('m-desc').innerText = age <= 2 ? "まだ鉢に植えられたばかりの、ひょろっとした苗木です。" : "立派な風格が出てきました。";
+            document.getElementById('m-desc').innerText = "段階に応じた成長を見せています。";
             document.getElementById('modal').style.display = 'flex';
         }
-        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v59'); location.reload(); } }
+        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v60'); location.reload(); } }
     </script>
 </body>
 </html>
