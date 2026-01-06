@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v50 - CIRCULAR UI</title>
+    <title>BONSAI HD PIXEL v51 - CENTER WATER UI</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -43,27 +43,28 @@
         }
         @keyframes drop-fall { 0% { transform: translateY(-50px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(250px); opacity: 0; } }
 
-        /* 円形ジョウロUI */
+        /* 中央下部の水やりUI */
         #watering-ui {
-            position: absolute; top: 20px; right: 20px; display: none;
-            align-items: center; justify-content: center; z-index: 150;
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: none; align-items: center; justify-content: center; z-index: 150;
         }
-        .circular-container { position: relative; width: 70px; height: 70px; }
+        .circular-container { position: relative; width: 80px; height: 80px; }
         .progress-ring { transform: rotate(-90deg); }
         .progress-ring__circle {
-            stroke: #00e5ff; stroke-width: 4; fill: transparent;
-            stroke-dasharray: 201; stroke-dashoffset: 201;
+            stroke: #00e5ff; stroke-width: 5; fill: transparent;
+            stroke-dasharray: 226; stroke-dashoffset: 226; /* 2 * PI * 36 */
             transition: stroke-dashoffset 0.2s;
         }
 
-        .watering-can-btn {
+        .water-drop-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 50px; height: 50px; background: #3e2723; border-radius: 50%;
+            width: 56px; height: 56px; background: rgba(0, 229, 255, 0.2); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; border: 2px solid #5d4037; z-index: 2;
+            font-size: 28px; cursor: pointer; border: 2px solid #00e5ff; z-index: 2;
+            transition: transform 0.1s, background 0.1s;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
-        .can-tilt { animation: can-tilt-anim 0.2s ease; }
-        @keyframes can-tilt-anim { 0% { transform: translate(-50%, -50%) rotate(0); } 50% { transform: translate(-50%, -50%) rotate(-30deg); } 100% { transform: translate(-50%, -50%) rotate(0); } }
+        .water-drop-btn:active { transform: translate(-50%, -50%) scale(0.9); background: rgba(0, 229, 255, 0.4); }
 
         #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
         .progress-container { width: 60%; height: 4px; background: #222; margin-top: 15px; overflow: hidden; }
@@ -99,10 +100,10 @@
             
             <div id="watering-ui">
                 <div class="circular-container">
-                    <svg class="progress-ring" width="70" height="70">
-                        <circle class="progress-ring__circle" stroke-width="4" fill="transparent" r="32" cx="35" cy="35"/>
+                    <svg class="progress-ring" width="80" height="80">
+                        <circle class="progress-ring__circle" stroke-width="5" fill="transparent" r="36" cx="40" cy="40"/>
                     </svg>
-                    <div id="can-btn" class="watering-can-btn" onclick="tapWatering()">🏺</div>
+                    <div id="drop-btn" class="water-drop-btn" onclick="tapWatering()">💧</div>
                 </div>
             </div>
 
@@ -169,7 +170,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v50');
+            const s = localStorage.getItem('bonsai_v51');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -189,15 +190,10 @@
             document.getElementById('m-species').innerText = species.toUpperCase();
             document.getElementById('m-age').innerText = age.toFixed(1) + "年";
             document.getElementById('m-love').innerText = love;
-            
-            let bond = "知己";
-            if(love > 50) bond = "愛好家"; if(love > 150) bond = "親密"; if(love > 300) bond = "相棒";
+            let bond = "知己"; if(love > 50) bond = "愛好家"; if(love > 150) bond = "親密"; if(love > 300) bond = "相棒";
             document.getElementById('m-bond-label').innerText = bond;
-
             const speciesMap = {"Black Pine":"黒松","Maple":"楓","Cherry Blossom":"桜","Juniper":"真柏"};
-            let desc = `この${speciesMap[species]||species}は、あなたの手入れによって風格を漂わせています。<br><br>`;
-            desc += age < 1 ? "若木ながらも、生命の輝きを感じさせます。" : "年月を経たような深い味わいが出てきました。";
-            document.getElementById('m-status-desc').innerHTML = desc;
+            document.getElementById('m-status-desc').innerHTML = `この${speciesMap[species]||species}は、あなたの手入れに応えるように成長しています。<br><br>${age < 1 ? "まだあどけない姿ですが、芯の強さを感じさせます。" : "堂々とした風格が漂い始めています。"}`;
             document.getElementById('modal').style.display = 'flex';
         }
 
@@ -210,19 +206,14 @@
 
         function setProgress(percent) {
             const circle = document.querySelector('.progress-ring__circle');
-            const radius = circle.r.baseVal.value;
-            const circumference = radius * 2 * Math.PI;
-            const offset = circumference - (percent / 100 * circumference);
-            circle.style.strokeDashoffset = offset;
+            const circumference = 36 * 2 * Math.PI;
+            circle.style.strokeDashoffset = circumference - (percent / 100 * circumference);
         }
 
         function tapWatering() {
             if (waterCount >= WATER_MAX) return;
             waterCount++;
             setProgress((waterCount / WATER_MAX) * 100);
-
-            const btn = document.getElementById('can-btn');
-            btn.classList.remove('can-tilt'); void btn.offsetWidth; btn.classList.add('can-tilt');
 
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block';
@@ -245,9 +236,7 @@
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; 
-            showMainUI(); 
-            await generateBonsai();
+            isFixed = true; showMainUI(); await generateBonsai();
         }
 
         async function generateBonsai() {
@@ -272,13 +261,13 @@
             gp -= COST; age += 0.1; await generateBonsai();
         }
 
-        function save() { localStorage.setItem('bonsai_v50', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v51', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('gb').disabled = (gp < COST);
             if(img) document.getElementById('main-img').src = img;
-            document.getElementById('health-msg').innerText = isFixed ? "今日も一滴の水を大切に。" : "理想の苗木を選んでください。";
+            document.getElementById('health-msg').innerText = isFixed ? "樹の呼吸に耳を傾ける。" : "新たな命を迎えましょう。";
         }
 
         function showMainUI() {
@@ -286,7 +275,7 @@
             document.getElementById('main-controls').classList.remove('hidden');
         }
 
-        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v50'); location.reload(); } }
+        function resetGame() { if(confirm("データを消去しますか？")) { localStorage.removeItem('bonsai_v51'); location.reload(); } }
     </script>
 </body>
 </html>
