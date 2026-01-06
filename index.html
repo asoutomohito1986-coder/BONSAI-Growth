@@ -3,33 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v57 - PERFECT GROWTH</title>
+    <title>BONSAI HD PIXEL v58 - BUG FIX COMPLETE</title>
     <style>
         body { text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; transition: opacity 0.4s; }
         #game-screen { flex: 1; padding: 15px; display: none; flex-direction: column; align-items: center; justify-content: space-around; box-sizing: border-box; }
         #game-screen.active { display: flex; }
         .val { font-size: 28px; color: #4caf50; font-weight: bold; }
-        #view { width: min(300px, 80vw); height: min(300px, 80vw); background: #000; border-radius: 40px; border: 4px solid #222; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+        
+        #view { 
+            width: min(300px, 80vw); height: min(300px, 80vw); 
+            background: #000; border-radius: 40px; border: 4px solid #222; 
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+        
+        #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 10; }
         #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: filter 0.3s; }
-        .shiny-bonsai { filter: brightness(1.4) drop-shadow(0 0 15px #fff700); }
-        #watering-ui { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; align-items: center; justify-content: center; z-index: 150; }
+        
+        /* 水のエフェクトを最前面にするために z-index を高く設定 */
+        #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 500; display: none; }
+        .pixel-drop { 
+            position: absolute; width: 4px; height: 12px; background: #00e5ff; 
+            box-shadow: 0 0 6px #00e5ff; animation: drop-fall 0.6s linear forwards; 
+        }
+        @keyframes drop-fall { 
+            0% { transform: translateY(-20px); opacity: 0; } 
+            20% { opacity: 1; }
+            100% { transform: translateY(300px); opacity: 0; } 
+        }
+
+        #watering-ui { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; align-items: center; justify-content: center; z-index: 600; }
         .circular-container { position: relative; width: 80px; height: 80px; }
         .progress-ring { transform: rotate(-90deg); }
         .progress-ring__circle { stroke: #00e5ff; stroke-width: 5; fill: transparent; stroke-dasharray: 226; stroke-dashoffset: 226; transition: stroke-dashoffset 0.2s; }
-        .water-drop-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; background: rgba(0, 229, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; border: 2px solid #00e5ff; z-index: 2; transition: all 0.2s; }
-        .bonus-ready { animation: rainbow-glow 0.8s infinite alternate !important; border-color: #fff !important; box-shadow: 0 0 30px #fff, 0 0 10px #00e5ff !important; }
-        @keyframes rainbow-glow { 0% { background: rgba(255, 0, 0, 0.6); transform: translate(-50%, -50%) scale(1); } 100% { background: rgba(0, 0, 255, 0.6); transform: translate(-50%, -50%) scale(1.1); } }
-        #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
-        .pixel-drop { position: absolute; width: 3px; height: 10px; background: #00e5ff; box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.7s ease-in forwards; }
-        @keyframes drop-fall { 0% { transform: translateY(-50px); opacity: 0; } 100% { transform: translateY(250px); opacity: 0; } }
-        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        
+        .water-drop-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(0, 229, 255, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: 2px solid #00e5ff; }
+        .bonus-ready { animation: rainbow-glow 0.8s infinite alternate !important; }
+        @keyframes rainbow-glow { 0% { background: rgba(255, 0, 0, 0.6); } 100% { background: rgba(0, 0, 255, 0.6); transform: translate(-50%, -50%) scale(1.1); } }
+
+        #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); flex-direction: column; align-items: center; justify-content: center; z-index: 800; }
+        
         .controls { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 8px; margin-bottom: env(safe-area-inset-bottom); }
-        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.1s; outline: none; }
+        .btn { padding: 16px; border-radius: 16px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
         .btn-w { background: #1b5e20; color: #fff; box-shadow: 0 4px 0 #0d210d; }
         .btn-g { background: #e65100; color: #fff; box-shadow: 0 4px 0 #5e2100; }
-        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
         .style-box { background: #1a1a1a; padding: 10px; border-radius: 15px; border: 1px solid #333; }
         .dropdown { background: transparent; color: #fff; border: none; width: 100%; font-size: 15px; text-align: center; outline: none; }
         #modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
@@ -45,6 +65,7 @@
 
     <div id="game-screen">
         <div class="status-bar"><div>GP <span id="ui-gp" class="val">0</span></div></div>
+        
         <div id="view">
             <div id="water-layer"></div>
             <div id="watering-ui">
@@ -59,12 +80,15 @@
                 <div id="placeholder" style="font-size:50px; opacity:0.1;">🪴</div>
             </div>
         </div>
-        <div id="health-msg" style="color:#aaa; font-size:14px; margin-top:5px;">樹の呼吸に耳を傾ける。</div>
+
+        <div id="health-msg" style="color:#aaa; font-size:14px;">樹の呼吸に耳を傾ける。</div>
+
         <div class="controls">
             <div id="setup-area">
                 <div class="style-box"><select id="species-select" class="dropdown"><option value="Black Pine">黒松</option><option value="Maple">楓</option><option value="Cherry Blossom">桜</option><option value="Juniper">真柏</option></select></div>
                 <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">START GROWTH</button>
             </div>
+            
             <div id="main-controls" class="hidden">
                 <button id="main-w-btn" class="btn btn-w" style="width:100%;" onclick="startWateringMode()">💧 WATERING</button>
                 <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ GROWTH (50GP)</button>
@@ -76,7 +100,7 @@
                     </select>
                 </div>
             </div>
-            <button class="btn btn-reset" style="background:#333; color:#888; margin-top:10px; font-size:10px; padding:5px;" onclick="resetGame()">RESET DATA</button>
+            <button class="btn btn-reset" style="background:none; color:#444; margin-top:10px; font-size:10px;" onclick="resetGame()">RESET DATA</button>
         </div>
     </div>
 
@@ -98,10 +122,10 @@
         const WATER_MAX = 10, COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v57');
+            const s = localStorage.getItem('bonsai_v58');
             if(s) {
                 const d = JSON.parse(s);
-                gp=d.gp||0; love=d.love||0; age=d.age||1; img=d.img||""; targetStyle=d.target||"chokkan"; species=d.species||"Black Pine"; seed=d.seed||seed; isFixed=d.isFixed||false;
+                gp=d.gp||0; love=d.love||0; age=Number(d.age)||1; img=d.img||""; targetStyle=d.target||"chokkan"; species=d.species||"Black Pine"; seed=d.seed||seed; isFixed=d.isFixed||false;
                 update();
             }
         };
@@ -116,17 +140,34 @@
         }
 
         function setProgress(pct) { const circle = document.querySelector('.progress-ring__circle'); circle.style.strokeDashoffset = 226 - (pct / 100 * 226); }
-        function startWateringMode() { document.getElementById('main-w-btn').disabled = true; document.getElementById('watering-ui').style.display = 'flex'; document.getElementById('drop-btn').classList.remove('bonus-ready'); waterCount = 0; setProgress(0); }
+
+        function startWateringMode() {
+            document.getElementById('main-w-btn').disabled = true;
+            document.getElementById('watering-ui').style.display = 'flex';
+            document.getElementById('drop-btn').classList.remove('bonus-ready');
+            waterCount = 0;
+            setProgress(0);
+        }
 
         function tapWatering() {
             if (waterCount >= WATER_MAX) return;
-            waterCount++; setProgress((waterCount / WATER_MAX) * 100);
-            const layer = document.getElementById('water-layer'); layer.style.display = 'block';
-            let d = document.createElement('div'); d.className = 'pixel-drop'; d.style.left = (Math.random()*80+10)+'%';
-            layer.appendChild(d); setTimeout(()=>d.remove(), 700);
+            waterCount++;
+            setProgress((waterCount / WATER_MAX) * 100);
+            
+            // 水滴エフェクトの生成
+            const layer = document.getElementById('water-layer');
+            layer.style.display = 'block';
+            for(let i=0; i<3; i++) {
+                let d = document.createElement('div');
+                d.className = 'pixel-drop';
+                d.style.left = (Math.random() * 80 + 10) + '%';
+                d.style.animationDelay = (i * 0.1) + 's';
+                layer.appendChild(d);
+                setTimeout(() => d.remove(), 600);
+            }
+
             if (waterCount >= WATER_MAX) {
-                document.getElementById('main-img').classList.add('shiny-bonsai');
-                setTimeout(() => { document.getElementById('main-img').classList.remove('shiny-bonsai'); finishWatering(); }, 1000);
+                setTimeout(finishWatering, 600);
             }
         }
 
@@ -134,7 +175,8 @@
             gp += 10; love += 5;
             if (Math.random() < 0.2) {
                 document.getElementById('health-msg').innerText = "✨ 盆栽がさらに水を求めています！ ✨";
-                document.getElementById('drop-btn').classList.add('bonus-ready'); waterCount = 0; setProgress(0);
+                document.getElementById('drop-btn').classList.add('bonus-ready');
+                waterCount = 0; setProgress(0);
             } else {
                 document.getElementById('watering-ui').style.display = 'none';
                 document.getElementById('main-w-btn').disabled = false;
@@ -143,23 +185,36 @@
             save(); update();
         }
 
-        async function firstGrow() { species = document.getElementById('species-select').value; isFixed = true; age = 1; showMainUI(); await generateBonsai(); }
+        async function firstGrow() {
+            species = document.getElementById('species-select').value;
+            isFixed = true; age = 1; 
+            showMainUI(); 
+            await generateBonsai();
+        }
+
+        async function doG() {
+            if(gp < COST) return;
+            gp -= COST;
+            age += 1;
+            await generateBonsai();
+        }
 
         async function generateBonsai() {
             document.getElementById('loading-overlay').style.display = 'flex';
-            // 成長段階と「鉢」を絶対に含めるプロンプト
             let kw = "";
-            if(age <= 2) kw = "tiny_sapling,very_thin_single_stem,minimal_small_leaves,starter_plant";
-            else if(age <= 5) kw = "young_bonsai_tree,small_developing_branches,thin_trunk";
-            else if(age <= 9) kw = "mature_bonsai_tree,dense_pixel_foliage,thick_trunk";
-            else kw = "majestic_masterpiece_bonsai,massive_foliage_clouds,ancient_thick_gnarled_trunk";
+            if(age <= 2) kw = "tiny_sapling,very_thin_single_stem,minimal_leaves";
+            else if(age <= 5) kw = "young_bonsai_tree,small_branches_developing";
+            else if(age <= 9) kw = "mature_bonsai_tree,dense_pixel_foliage";
+            else kw = "majestic_masterpiece_bonsai,huge_foliage_clouds,ancient_thick_trunk";
 
             const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species}_bonsai_tree,${kw},planted_in_a_ceramic_bonsai_pot,${targetStyle}_style,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
             
-            const temp = new Image(); temp.src = url;
+            const temp = new Image();
+            temp.src = url;
             temp.onload = () => {
-                img = url; document.getElementById('main-img').src = url;
+                img = url;
+                document.getElementById('main-img').src = url;
                 document.getElementById('main-img').style.display = 'block';
                 document.getElementById('placeholder').style.display = 'none';
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -167,23 +222,33 @@
             };
         }
 
-        async function doG() { if(gp < COST) return; gp -= COST; age += 1; await generateBonsai(); }
-        function save() { localStorage.setItem('bonsai_v57', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v58', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+
         function update() { 
             document.getElementById('ui-gp').innerText = gp; 
             document.getElementById('gb').disabled = (gp < COST);
-            if(img) { document.getElementById('main-img').src = img; document.getElementById('main-img').style.display = 'block'; document.getElementById('placeholder').style.display = 'none'; }
+            if(img) {
+                document.getElementById('main-img').src = img;
+                document.getElementById('main-img').style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
+            }
         }
-        function showMainUI() { document.getElementById('setup-area').classList.add('hidden'); document.getElementById('main-controls').classList.remove('hidden'); }
+
+        function showMainUI() {
+            document.getElementById('setup-area').classList.add('hidden');
+            document.getElementById('main-controls').classList.remove('hidden');
+        }
+
         function showModal() {
             if(!isFixed || document.getElementById('watering-ui').style.display === 'flex') return;
             document.getElementById('m-species').innerText = species.toUpperCase();
             document.getElementById('m-age').innerText = age + " / 10";
             document.getElementById('m-love').innerText = love;
-            document.getElementById('m-status-desc').innerText = age <= 2 ? "まだ生まれたばかりの苗木です。大切に育てましょう。" : "立派な鉢に植えられた、将来有望な一鉢です。";
+            document.getElementById('m-status-desc').innerText = age <= 2 ? "まだ生まれたばかりの苗木です。" : "立派な鉢に植えられた一鉢です。";
             document.getElementById('modal').style.display = 'flex';
         }
-        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v57'); location.reload(); } }
+
+        function resetGame() { if(confirm("データを全て消去して最初から始めますか？")) { localStorage.removeItem('bonsai_v58'); location.reload(); } }
     </script>
 </body>
 </html>
