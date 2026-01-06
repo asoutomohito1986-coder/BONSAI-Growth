@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v52 - SHINY WATERING</title>
+    <title>BONSAI HD PIXEL v53 - 10 STEPS GROWTH</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -36,8 +36,7 @@
         #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
         #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: filter 0.3s; }
 
-        /* 完了時の輝きエフェクト */
-        .shiny-bonsai { filter: brightness(1.5) drop-shadow(0 0 20px #fff700); }
+        .shiny-bonsai { filter: brightness(1.4) drop-shadow(0 0 15px #fff700); }
 
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
         .pixel-drop { 
@@ -46,7 +45,6 @@
         }
         @keyframes drop-fall { 0% { transform: translateY(-50px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(250px); opacity: 0; } }
 
-        /* キラキラパーティクル */
         .sparkle {
             position: absolute; width: 6px; height: 6px; background: #fff700;
             border-radius: 50%; pointer-events: none; z-index: 110;
@@ -57,7 +55,6 @@
             100% { transform: scale(1.5) rotate(180deg) translate(var(--tx), var(--ty)); opacity: 0; }
         }
 
-        /* 中央下部の水やりUI */
         #watering-ui {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: none; align-items: center; justify-content: center; z-index: 150;
@@ -78,7 +75,6 @@
             transition: all 0.2s;
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
-        /* ボーナス時の虹色発光 */
         .bonus-ready { 
             animation: rainbow-glow 1s infinite alternate;
             border-color: #fff !important;
@@ -181,7 +177,7 @@
             <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
             <div id="m-status-desc" style="color:#ddd; font-size:14px; line-height:1.7; min-height:80px;"></div>
             <div style="background:#1a1a1a; padding:12px; border-radius:15px; margin-top:15px; display:flex; justify-content:space-around;">
-                <div style="text-align:center;"><div style="font-size:10px; color:#666;">AGE</div><div id="m-age" style="font-weight:bold; color:#fff;"></div></div>
+                <div style="text-align:center;"><div style="font-size:10px; color:#666;">STAGE</div><div id="m-age" style="font-weight:bold; color:#fff;"></div></div>
                 <div style="text-align:center;"><div style="font-size:10px; color:#666;">LOVE</div><div id="m-love" style="font-weight:bold; color:#4caf50;"></div></div>
             </div>
             <button class="btn btn-w" style="margin-top:20px; width:100%;" onclick="document.getElementById('modal').style.display='none'">CLOSE</button>
@@ -189,16 +185,16 @@
     </div>
 
     <script>
-        let gp=0, love=0, age=0.1, img="", targetStyle="chokkan", species="Black Pine", seed=Math.floor(Math.random()*1000), isFixed=false;
+        let gp=0, love=0, age=1, img="", targetStyle="chokkan", species="Black Pine", seed=Math.floor(Math.random()*1000), isFixed=false;
         let waterCount = 0;
         const WATER_MAX = 10;
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v52');
+            const s = localStorage.getItem('bonsai_v53');
             if(s) {
                 const d = JSON.parse(s);
-                gp=d.gp; love=d.love||0; age=d.age; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
+                gp=d.gp; love=d.love||0; age=d.age||1; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
                 if(isFixed) showMainUI();
                 update();
             }
@@ -207,6 +203,19 @@
         function enterGame() {
             document.getElementById('login-screen').style.opacity = '0';
             setTimeout(() => { document.getElementById('login-screen').style.display='none'; document.getElementById('game-screen').classList.add('active'); }, 300);
+        }
+
+        function showModal() {
+            if(!isFixed || document.getElementById('watering-ui').style.display === 'flex') return;
+            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
+            document.getElementById('m-species').innerText = species.toUpperCase();
+            document.getElementById('m-age').innerText = Math.floor(age) + " / 10";
+            document.getElementById('m-love').innerText = love;
+            let bond = "知己"; if(love > 50) bond = "愛好家"; if(love > 150) bond = "親密"; if(love > 300) bond = "相棒";
+            document.getElementById('m-bond-label').innerText = bond;
+            const speciesMap = {"Black Pine":"黒松","Maple":"楓","Cherry Blossom":"桜","Juniper":"真柏"};
+            document.getElementById('m-status-desc').innerHTML = `この${speciesMap[species]||species}は、10段階の成長のうち ${Math.floor(age)} 段階目にあります。<br><br>${age < 4 ? "まだ若木ですが、可能性を秘めています。" : age < 8 ? "枝ぶりが良くなり、風格が出てきました。" : "完成まであと僅か。見事な盆栽です。"}`;
+            document.getElementById('modal').style.display = 'flex';
         }
 
         function startWateringMode() {
@@ -228,7 +237,6 @@
             waterCount++;
             setProgress((waterCount / WATER_MAX) * 100);
 
-            // 水滴エフェクト
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block';
             for(let i=0; i<6; i++) {
@@ -248,13 +256,11 @@
         function playCompleteEffect() {
             const imgEl = document.getElementById('main-img');
             imgEl.classList.add('shiny-bonsai');
-            
             const container = document.getElementById('bonsai-img-container');
             for(let i=0; i<20; i++) {
                 let s = document.createElement('div');
                 s.className = 'sparkle';
-                s.style.left = '50%';
-                s.style.top = '50%';
+                s.style.left = '50%'; s.style.top = '50%';
                 s.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
                 s.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
                 container.appendChild(s);
@@ -265,8 +271,6 @@
 
         function finishWatering() {
             gp += 10; love += 5;
-            
-            // 20%の確率でおかわりボーナス
             if (Math.random() < 0.2) {
                 document.getElementById('health-msg').innerText = "盆栽がさらに水を求めています！";
                 document.getElementById('drop-btn').classList.add('bonus-ready');
@@ -282,13 +286,14 @@
 
         async function firstGrow() {
             species = document.getElementById('species-select').value;
-            isFixed = true; showMainUI(); await generateBonsai();
+            isFixed = true; age = 1; showMainUI(); await generateBonsai();
         }
 
         async function generateBonsai() {
             const overlay = document.getElementById('loading-overlay');
             overlay.style.display = 'flex';
-            const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species},in_a_ceramic_bonsai_pot,full_bonsai_view,${targetStyle}_style,growth_stage_${age.toFixed(1)},white_background`);
+            // ageが1.0単位で増えるため、プロンプトの変化も明確になる
+            const prompt = encodeURIComponent(`high_definition_pixel_art,isometric,${species},in_a_ceramic_bonsai_pot,full_bonsai_view,${targetStyle}_style,growth_stage_${Math.floor(age)},detailed_foliage,white_background`);
             const url = `https://image.pollinations.ai/prompt/${prompt}?seed=${seed}&width=512&height=512&nologo=true`;
             const temp = new Image();
             temp.src = url;
@@ -304,10 +309,12 @@
 
         async function doG() {
             if(gp < COST) return;
-            gp -= COST; age += 0.1; await generateBonsai();
+            gp -= COST; 
+            age += 1.0; // 1回で1段階進む（計10段階）
+            await generateBonsai();
         }
 
-        function save() { localStorage.setItem('bonsai_v52', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v53', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
@@ -323,7 +330,7 @@
             document.getElementById('main-controls').classList.remove('hidden');
         }
 
-        function resetGame() { if(confirm("データを消去しますか？")) { localStorage.removeItem('bonsai_v52'); location.reload(); } }
+        function resetGame() { if(confirm("データを消去しますか？")) { localStorage.removeItem('bonsai_v53'); location.reload(); } }
     </script>
 </body>
 </html>
