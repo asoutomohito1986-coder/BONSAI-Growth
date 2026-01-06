@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v48 - REAL WATERING CAN</title>
+    <title>BONSAI HD PIXEL v49 - RICH UI & TEXT</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -36,41 +36,40 @@
         #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
         #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 
-        /* 水エフェクト（ジョウロの先から出るように位置調整） */
+        /* 水エフェクト（全体に広がる） */
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
         .pixel-drop { 
-            position: absolute; width: 3px; height: 8px; background: #00e5ff; 
-            box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.6s ease-in forwards;
+            position: absolute; width: 3px; height: 10px; background: #00e5ff; 
+            box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.7s ease-in forwards;
         }
         @keyframes drop-fall { 
-            0% { transform: translateY(0) scaleY(1.5); opacity: 0; } 
-            20% { opacity: 1; }
-            100% { transform: translateY(120px) scaleY(1); opacity: 0; } 
+            0% { transform: translateY(-50px); opacity: 0; } 
+            30% { opacity: 1; }
+            100% { transform: translateY(250px); opacity: 0; } 
         }
 
-        /* ジョウロUI */
+        /* 右上のジョウロUI */
         #watering-ui {
-            position: absolute; bottom: 30px; width: 100%; display: none;
+            position: absolute; top: 20px; right: 20px; display: none;
             flex-direction: column; align-items: center; z-index: 150;
         }
-        .can-wrapper { position: relative; width: 80px; height: 80px; transition: transform 0.1s; }
-        /* 傾くアニメーション */
-        .can-tilt { transform: rotate(-35deg) translateX(-10px); }
+        .can-wrapper { position: relative; width: 60px; height: 60px; transition: transform 0.1s; }
+        .can-tilt { transform: rotate(-40deg) scale(1.1); }
 
         .watering-can {
-            width: 80px; height: 80px; background: #3e2723; border-radius: 20px;
-            font-size: 40px; display: flex; align-items: center; justify-content: center;
+            width: 60px; height: 60px; background: #3e2723; border-radius: 15px;
+            font-size: 30px; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer;
             border: 2px solid #5d4037;
         }
-        /* ジョウロの注ぎ口を模したパーツ */
+        /* 注ぎ口 */
         .watering-can::after {
-            content: ""; position: absolute; left: -20px; top: 30px;
-            width: 30px; height: 10px; background: #3e2723;
-            transform: rotate(-20deg); border-radius: 5px; border-left: 2px solid #5d4037;
+            content: ""; position: absolute; left: -15px; top: 20px;
+            width: 20px; height: 8px; background: #3e2723;
+            transform: rotate(-20deg); border-radius: 4px;
         }
 
-        .w-progress-bg { width: 150px; height: 6px; background: #222; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .w-progress-bg { width: 60px; height: 4px; background: #222; border-radius: 2px; margin-top: 8px; overflow: hidden; }
         #w-progress-bar { width: 0%; height: 100%; background: #00e5ff; transition: width 0.2s; }
 
         #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
@@ -106,9 +105,9 @@
             
             <div id="watering-ui">
                 <div id="can-wrapper" class="can-wrapper">
-                    <div class="watering-can" onclick="tapWatering()">🪴</div> </div>
+                    <div class="watering-can" onclick="tapWatering()">🏺</div>
+                </div>
                 <div class="w-progress-bg"><div id="w-progress-bar"></div></div>
-                <div style="font-size:10px; color:#00e5ff; margin-top:8px; font-weight:bold; letter-spacing:1px;">TAP THE CAN</div>
             </div>
 
             <div id="loading-overlay">
@@ -121,7 +120,7 @@
             </div>
         </div>
 
-        <div id="health-msg">鉢の中の小さな宇宙へ、潤いを。</div>
+        <div id="health-msg">静寂の中で、樹と向き合う。</div>
 
         <div class="controls">
             <div id="setup-area">
@@ -134,7 +133,7 @@
                 <button class="btn btn-g" style="width:100%; margin-top:10px;" onclick="firstGrow()">START GROWTH</button>
             </div>
             <div id="main-controls" class="hidden">
-                <button id="main-w-btn" class="btn btn-w" style="width:100%;" onclick="startWateringMode()">💧 WATERING</button>
+                <button id="main-w-btn" class="btn btn-w" style="width:100%;" onclick="startWateringMode()">💧 WATERING (10 TAPS)</button>
                 <button id="gb" class="btn btn-g" style="width:100%; margin-top:8px;" onclick="doG()">✨ GROWTH (50GP)</button>
                 <div class="style-box" style="margin-top:8px;">
                     <select id="style-select" class="dropdown" onchange="targetStyle=this.value;save();update();">
@@ -149,12 +148,20 @@
     </div>
 
     <div id="modal" onclick="this.style.display='none'">
-        <div style="background:#111; padding:25px; border-radius:30px; width:85%; max-width:300px; text-align:left; border:1px solid #333;" onclick="event.stopPropagation()">
-            <h3 id="m-species" style="color:#fff; margin:0; font-size:22px;"></h3>
-            <div id="m-status-desc" style="color:#ddd; font-size:13px; margin:15px 0; line-height:1.6;"></div>
-            <div style="display:flex; justify-content:space-between; font-size:12px; color:#aaa;">
-                <span>AGE: <b id="m-age" style="color:#fff;"></b></span>
-                <span>BOND: <b id="m-bond" style="color:#4caf50;"></b></span>
+        <div style="background:#111; padding:25px; border-radius:30px; width:85%; max-width:320px; text-align:left; border:1px solid #333;" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <h3 id="m-species" style="color:#fff; margin:0; font-size:24px;"></h3>
+                <span id="m-bond-label" style="font-size:10px; color:#4caf50; border:1px solid #4caf50; padding:2px 6px; border-radius:10px;"></span>
+            </div>
+            <div id="m-policy" style="color:#888; font-size:12px; margin-top:5px;"></div>
+            
+            <hr style="border:0; border-top:1px solid #222; margin:15px 0;">
+            
+            <div id="m-status-desc" style="color:#ddd; font-size:14px; line-height:1.7; min-height:80px;"></div>
+            
+            <div style="background:#1a1a1a; padding:12px; border-radius:15px; margin-top:15px; display:flex; justify-content:space-around;">
+                <div style="text-align:center;"><div style="font-size:10px; color:#666;">AGE</div><div id="m-age" style="font-weight:bold; color:#fff;"></div></div>
+                <div style="text-align:center;"><div style="font-size:10px; color:#666;">LOVE</div><div id="m-love" style="font-weight:bold; color:#4caf50;"></div></div>
             </div>
             <button class="btn btn-w" style="margin-top:20px; width:100%;" onclick="document.getElementById('modal').style.display='none'">CLOSE</button>
         </div>
@@ -167,7 +174,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v48');
+            const s = localStorage.getItem('bonsai_v49');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -183,10 +190,32 @@
 
         function showModal() {
             if(!isFixed || document.getElementById('watering-ui').style.display === 'flex') return;
+            
+            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
             document.getElementById('m-species').innerText = species.toUpperCase();
-            document.getElementById('m-age').innerText = age.toFixed(1) + " yrs";
-            document.getElementById('m-bond').innerText = love > 100 ? "親密" : "知己";
-            document.getElementById('m-status-desc').innerText = "今日も盆栽は静かに呼吸しています。一滴の水が、この小さな世界の命を繋ぎます。";
+            document.getElementById('m-age').innerText = age.toFixed(1) + "年";
+            document.getElementById('m-love').innerText = love;
+            document.getElementById('m-policy').innerText = "仕立て方針: " + styleName;
+            
+            // 愛情度に応じた称号
+            let bond = "知己";
+            if(love > 50) bond = "愛好家";
+            if(love > 150) bond = "親密";
+            if(love > 300) bond = "相棒";
+            document.getElementById('m-bond-label').innerText = bond;
+
+            // リッチな説明文の生成
+            const speciesMap = {"Black Pine":"黒松","Maple":"楓","Cherry Blossom":"桜","Juniper":"真柏"};
+            const sName = speciesMap[species] || species;
+            
+            let desc = `この${sName}は、あなたの手入れによって独自の風格を漂わせ始めています。`;
+            if(age < 1) desc += `まだ若木ですが、力強く根を張ろうとする生命力を感じます。`;
+            else if(age < 3) desc += `枝ぶりに個性が現れ、${styleName}としての形が整ってきました。`;
+            else desc += `長い年月をかけたような気品を纏い、鉢の中に一つの宇宙を完成させています。`;
+            
+            desc += `<br><br>日々の水やりが、葉の艶を保ち、樹の心を穏やかにしているようです。`;
+
+            document.getElementById('m-status-desc').innerHTML = desc;
             document.getElementById('modal').style.display = 'flex';
         }
 
@@ -199,30 +228,24 @@
 
         function tapWatering() {
             if (waterCount >= WATER_MAX) return;
-            
             waterCount++;
             updateWaterBar();
 
-            // ジョウロを傾ける
             const can = document.getElementById('can-wrapper');
             can.classList.add('can-tilt');
             setTimeout(() => can.classList.remove('can-tilt'), 150);
 
-            // 水滴エフェクト（ジョウロの先から出す）
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block';
-            for(let i=0; i<4; i++) {
+            for(let i=0; i<6; i++) {
                 let d = document.createElement('div'); d.className = 'pixel-drop';
-                d.style.left = (35 + Math.random() * 10) + '%'; // ジョウロの注ぎ口付近
-                d.style.top = '60%'; 
-                d.style.animationDelay = (Math.random() * 0.1) + 's';
+                d.style.left = (Math.random() * 90 + 5) + '%'; // 全体に広がる
+                d.style.animationDelay = (Math.random() * 0.3) + 's';
                 layer.appendChild(d);
-                setTimeout(() => d.remove(), 600);
+                setTimeout(() => d.remove(), 700);
             }
 
-            if (waterCount >= WATER_MAX) {
-                setTimeout(finishWatering, 500);
-            }
+            if (waterCount >= WATER_MAX) setTimeout(finishWatering, 500);
         }
 
         function updateWaterBar() {
@@ -263,7 +286,7 @@
             gp -= COST; age += 0.1; await generateBonsai();
         }
 
-        function save() { localStorage.setItem('bonsai_v48', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v49', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
@@ -276,7 +299,7 @@
             document.getElementById('main-controls').classList.remove('hidden');
         }
 
-        function resetGame() { if(confirm("RESET?")) { localStorage.removeItem('bonsai_v48'); location.reload(); } }
+        function resetGame() { if(confirm("データをリセットしますか？")) { localStorage.removeItem('bonsai_v49'); location.reload(); } }
     </script>
 </body>
 </html>
