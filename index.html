@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>BONSAI HD PIXEL v51 - CENTER WATER UI</title>
+    <title>BONSAI HD PIXEL v52 - SHINY WATERING</title>
     <style>
         body { 
             text-align: center; background: #0f0f0f; color: #fff; font-family: sans-serif; 
@@ -33,8 +33,11 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         
-        #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+        #bonsai-img-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+        #bonsai-img-container img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transition: filter 0.3s; }
+
+        /* 完了時の輝きエフェクト */
+        .shiny-bonsai { filter: brightness(1.5) drop-shadow(0 0 20px #fff700); }
 
         #water-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; display: none; }
         .pixel-drop { 
@@ -42,6 +45,17 @@
             box-shadow: 0 0 4px #00e5ff; animation: drop-fall 0.7s ease-in forwards;
         }
         @keyframes drop-fall { 0% { transform: translateY(-50px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(250px); opacity: 0; } }
+
+        /* キラキラパーティクル */
+        .sparkle {
+            position: absolute; width: 6px; height: 6px; background: #fff700;
+            border-radius: 50%; pointer-events: none; z-index: 110;
+            animation: sparkle-anim 0.8s ease-out forwards;
+        }
+        @keyframes sparkle-anim {
+            0% { transform: scale(0) rotate(0); opacity: 1; }
+            100% { transform: scale(1.5) rotate(180deg) translate(var(--tx), var(--ty)); opacity: 0; }
+        }
 
         /* 中央下部の水やりUI */
         #watering-ui {
@@ -52,7 +66,7 @@
         .progress-ring { transform: rotate(-90deg); }
         .progress-ring__circle {
             stroke: #00e5ff; stroke-width: 5; fill: transparent;
-            stroke-dasharray: 226; stroke-dashoffset: 226; /* 2 * PI * 36 */
+            stroke-dasharray: 226; stroke-dashoffset: 226;
             transition: stroke-dashoffset 0.2s;
         }
 
@@ -61,10 +75,21 @@
             width: 56px; height: 56px; background: rgba(0, 229, 255, 0.2); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 28px; cursor: pointer; border: 2px solid #00e5ff; z-index: 2;
-            transition: transform 0.1s, background 0.1s;
+            transition: all 0.2s;
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
-        .water-drop-btn:active { transform: translate(-50%, -50%) scale(0.9); background: rgba(0, 229, 255, 0.4); }
+        /* ボーナス時の虹色発光 */
+        .bonus-ready { 
+            animation: rainbow-glow 1s infinite alternate;
+            border-color: #fff !important;
+            box-shadow: 0 0 30px #fff700;
+        }
+        @keyframes rainbow-glow {
+            0% { background: rgba(255, 0, 0, 0.5); }
+            33% { background: rgba(0, 255, 0, 0.5); }
+            66% { background: rgba(0, 0, 255, 0.5); }
+            100% { background: rgba(255, 255, 0, 0.5); }
+        }
 
         #loading-overlay { display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
         .progress-container { width: 60%; height: 4px; background: #222; margin-top: 15px; overflow: hidden; }
@@ -170,7 +195,7 @@
         const COST = 50;
 
         window.onload = function() {
-            const s = localStorage.getItem('bonsai_v51');
+            const s = localStorage.getItem('bonsai_v52');
             if(s) {
                 const d = JSON.parse(s);
                 gp=d.gp; love=d.love||0; age=d.age; img=d.img; targetStyle=d.target; species=d.species; seed=d.seed; isFixed=d.isFixed||false;
@@ -184,22 +209,10 @@
             setTimeout(() => { document.getElementById('login-screen').style.display='none'; document.getElementById('game-screen').classList.add('active'); }, 300);
         }
 
-        function showModal() {
-            if(!isFixed || document.getElementById('watering-ui').style.display === 'flex') return;
-            const styleName = document.getElementById('style-select').options[document.getElementById('style-select').selectedIndex].text;
-            document.getElementById('m-species').innerText = species.toUpperCase();
-            document.getElementById('m-age').innerText = age.toFixed(1) + "年";
-            document.getElementById('m-love').innerText = love;
-            let bond = "知己"; if(love > 50) bond = "愛好家"; if(love > 150) bond = "親密"; if(love > 300) bond = "相棒";
-            document.getElementById('m-bond-label').innerText = bond;
-            const speciesMap = {"Black Pine":"黒松","Maple":"楓","Cherry Blossom":"桜","Juniper":"真柏"};
-            document.getElementById('m-status-desc').innerHTML = `この${speciesMap[species]||species}は、あなたの手入れに応えるように成長しています。<br><br>${age < 1 ? "まだあどけない姿ですが、芯の強さを感じさせます。" : "堂々とした風格が漂い始めています。"}`;
-            document.getElementById('modal').style.display = 'flex';
-        }
-
         function startWateringMode() {
             document.getElementById('main-w-btn').disabled = true;
             document.getElementById('watering-ui').style.display = 'flex';
+            document.getElementById('drop-btn').classList.remove('bonus-ready');
             waterCount = 0;
             setProgress(0);
         }
@@ -215,6 +228,7 @@
             waterCount++;
             setProgress((waterCount / WATER_MAX) * 100);
 
+            // 水滴エフェクト
             const layer = document.getElementById('water-layer');
             layer.style.display = 'block';
             for(let i=0; i<6; i++) {
@@ -224,13 +238,45 @@
                 layer.appendChild(d);
                 setTimeout(() => d.remove(), 700);
             }
-            if (waterCount >= WATER_MAX) setTimeout(finishWatering, 500);
+
+            if (waterCount >= WATER_MAX) {
+                playCompleteEffect();
+                setTimeout(finishWatering, 1000);
+            }
+        }
+
+        function playCompleteEffect() {
+            const imgEl = document.getElementById('main-img');
+            imgEl.classList.add('shiny-bonsai');
+            
+            const container = document.getElementById('bonsai-img-container');
+            for(let i=0; i<20; i++) {
+                let s = document.createElement('div');
+                s.className = 'sparkle';
+                s.style.left = '50%';
+                s.style.top = '50%';
+                s.style.setProperty('--tx', (Math.random() - 0.5) * 200 + 'px');
+                s.style.setProperty('--ty', (Math.random() - 0.5) * 200 + 'px');
+                container.appendChild(s);
+                setTimeout(() => s.remove(), 800);
+            }
+            setTimeout(() => imgEl.classList.remove('shiny-bonsai'), 800);
         }
 
         function finishWatering() {
-            document.getElementById('watering-ui').style.display = 'none';
-            document.getElementById('main-w-btn').disabled = false;
             gp += 10; love += 5;
+            
+            // 20%の確率でおかわりボーナス
+            if (Math.random() < 0.2) {
+                document.getElementById('health-msg').innerText = "盆栽がさらに水を求めています！";
+                document.getElementById('drop-btn').classList.add('bonus-ready');
+                waterCount = 0;
+                setProgress(0);
+            } else {
+                document.getElementById('watering-ui').style.display = 'none';
+                document.getElementById('main-w-btn').disabled = false;
+                document.getElementById('health-msg').innerText = "樹の呼吸に耳を傾ける。";
+            }
             save(); update();
         }
 
@@ -261,13 +307,15 @@
             gp -= COST; age += 0.1; await generateBonsai();
         }
 
-        function save() { localStorage.setItem('bonsai_v51', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
+        function save() { localStorage.setItem('bonsai_v52', JSON.stringify({ gp, love, age, img, target: targetStyle, species, seed, isFixed })); }
 
         function update() {
             document.getElementById('ui-gp').innerText = gp;
             document.getElementById('gb').disabled = (gp < COST);
             if(img) document.getElementById('main-img').src = img;
-            document.getElementById('health-msg').innerText = isFixed ? "樹の呼吸に耳を傾ける。" : "新たな命を迎えましょう。";
+            if(!document.querySelector('.bonus-ready')) {
+                document.getElementById('health-msg').innerText = isFixed ? "樹の呼吸に耳を傾ける。" : "新たな命を迎えましょう。";
+            }
         }
 
         function showMainUI() {
@@ -275,7 +323,7 @@
             document.getElementById('main-controls').classList.remove('hidden');
         }
 
-        function resetGame() { if(confirm("データを消去しますか？")) { localStorage.removeItem('bonsai_v51'); location.reload(); } }
+        function resetGame() { if(confirm("データを消去しますか？")) { localStorage.removeItem('bonsai_v52'); location.reload(); } }
     </script>
 </body>
 </html>
